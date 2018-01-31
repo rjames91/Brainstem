@@ -12,9 +12,12 @@ def generate_signal(signal_type="tone",fs=22050.,dBSPL=40.,
     num_samples = numpy.ceil(fs * duration)
     # inverted amp on input gives rarefaction effect for positive pressure (?!))
     if signal_type == "tone":
-        signal = [-amp*(numpy.sin(2*numpy.pi*freq*T*i) *
+        map_bs_cos_shift = numpy.pi/2
+        signal = [-amp*(numpy.sin(2*numpy.pi*freq*T*i+map_bs_cos_shift) *
                   (modulation_depth*0.5*(1+numpy.cos(2*numpy.pi*modulation_freq*T*i))))#modulation
                   for i in range(int(num_samples))]
+        #map_bs_remove 1st sample!?
+        signal=signal[1:]
 
     elif signal_type == "sweep_tone":
         if len(freq)<2:
@@ -34,7 +37,7 @@ def generate_signal(signal_type="tone",fs=22050.,dBSPL=40.,
         silence = False
         if file_name:
             [fs_f,signal] = wavfile.read(file_name)
-            if signal.shape[1]>1:#stereo
+            if len(signal.shape)>1:#stereo
                 signal = signal[:, 0]
             fs_f=numpy.float32(fs_f)
             if fs_f != fs:
@@ -48,7 +51,7 @@ def generate_signal(signal_type="tone",fs=22050.,dBSPL=40.,
                 if signal[i] == max_val:
                     print
                 signal[i]/=max_val
-                signal[i]*=amp #set loudness
+                signal[i]*=-amp #set loudness
         else:
             raise Exception("must include valid wav filename")
 
@@ -57,10 +60,13 @@ def generate_signal(signal_type="tone",fs=22050.,dBSPL=40.,
         signal = []
 
     # add ramps
-    num_ramp_samples = numpy.ceil(fs * ramp_duration)
-    step = (numpy.pi / 2.0) / (num_ramp_samples - 1)
+    num_ramp_samples = numpy.round(fs * ramp_duration)
+    #step = (numpy.pi / 2.0) / (num_ramp_samples - 1)
+    step = numpy.pi / (num_ramp_samples - 1)
+
     for i in range(int(num_ramp_samples)):
-        ramp = (numpy.sin(i * step))
+        #ramp = (numpy.sin(i * step))
+        ramp = (1 + numpy.cos(numpy.pi + i * step))/2.
         # on ramp
         signal[i] *= ramp
         # off ramp
@@ -74,10 +80,11 @@ def generate_signal(signal_type="tone",fs=22050.,dBSPL=40.,
         plt.figure(title)
         time = numpy.linspace(0,len(signal)/fs,len(signal))
         plt.plot(time,signal)
+        plt.xlim((0,len(signal)/fs))
+        #plt.plot(signal)
         plt.xlabel("time (s)")
         plt.ylabel("signal amplitude")
-        plt.xlim((0,len(signal)/fs))
-    return numpy.float32(signal)
+    return signal
 
 def generate_psth(target_neuron_ids,spike_trains,bin_width,
                   duration,scale_factor=0.001,Fs=22050.):
@@ -102,22 +109,22 @@ def generate_psth(target_neuron_ids,spike_trains,bin_width,
                 idx+=1
             psth[psth_row_index][idx] += 1
 
-            """if j < (prev_time + bin_width):
-                prev_time += j
-                spike_count += 1
-            else:
-                #psth_time_index = j // bin_width
-                psth_time_index = prev_time // bin_width
-                psth[psth_row_index][psth_time_index] = spike_count
-                #reset spike_count and prev_time
-                prev_time = j
-                spike_count = 1"""
         #increment psth_row_index
         psth_row_index += 1
 
     sum= numpy.sum(psth,axis=0)
-    output = (numpy.sum(psth,axis=0)/numpy.round(Fs * bin_width))/(len(target_neuron_ids)/Fs)
+    mean = sum/psth_row_index
+    output = [count * 1./bin_width for count in mean]
+    #output = (numpy.sum(psth,axis=0)/numpy.round(Fs * bin_width))/(len(target_neuron_ids)/Fs)
     return output
+
+def psth_plot(plt,target_neuron_ids,spike_trains,bin_width,
+                  duration,scale_factor=0.001,Fs=22050.,title='PSTH'):
+    PSTH = generate_psth(target_neuron_ids, spike_trains, bin_width=bin_width,
+                            duration=duration, scale_factor=scale_factor, Fs=Fs)
+    x = numpy.arange(0, duration, duration / float(len(PSTH)))
+    plt.figure(title)
+    plt.plot(x,PSTH)
 
 def spike_raster_plot(spikes,plt,duration,ylim,scale_factor=0.001,title=''):
     if len(spikes) > 0:
