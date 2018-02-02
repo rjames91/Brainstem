@@ -34,7 +34,7 @@ def generate_signal(signal_type="tone",fs=22050.,dBSPL=40.,
             delta = 2. * numpy.pi * f * T
 
     elif signal_type == "file":
-        silence = False
+        #silence = False
         if file_name:
             [fs_f,signal] = wavfile.read(file_name)
             if len(signal.shape)>1:#stereo
