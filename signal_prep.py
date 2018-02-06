@@ -139,7 +139,7 @@ def spike_raster_plot(spikes,plt,duration,ylim,scale_factor=0.001,title=''):
                  markerfacecolor='black', markeredgecolor='none',
                  markeredgewidth=0)
         plt.ylim(0, ylim)
-        plt.xlim(0, duration)
+        #plt.xlim(0, duration)
 
 def multi_spike_raster_plot(spikes_list,plt,duration,ylim,scale_factor=0.001,marker_size=3,dopamine_spikes=[],title=''):
     plt.figure(title)
@@ -278,3 +278,56 @@ def test_filter(audio_data,b0,b1,b2,a0,a1,a2):
         #past_concha[1] = past_concha[0]
         #past_concha[0] = concha[i]
     return concha
+
+#connects two spike trains from the same AN model in time
+def spike_train_join(spike_trains,num_neurons):
+    #spike trains is a list of pynn compatable spike source array spike trains
+    #e.g. [[[.,.,.],[.,.,.]],[[.,.,.],[.,.,.]]]
+
+    #output is a single pynn compatable spike source array spike train
+    #e.g. [[.,.,.],[.,.,.]]
+    spike_train_output=[]
+    for i in range(num_neurons):
+        spike_train_output.append([])
+
+    max_time = 0
+    for spike_train in spike_trains:
+        if len(spike_train)!=num_neurons:
+            raise Exception("number of neurons mismatch")
+        index = 0
+        new_max = 0
+        for neuron in spike_train:
+            for spike_time in neuron:
+                later_time = spike_time+max_time
+                spike_train_output[index].append(later_time)
+                if later_time > new_max:
+                    new_max = later_time
+            index+=1
+        #record final time to start from for next spike train
+        #max_time = numpy.amax(spike_train_output)
+        #max_time = max_time[-1]
+        max_time=new_max
+
+    return [spike_train_output,max_time]
+
+def normal_dist_connection_builder(pre_size,post_size,RandomDistribution,
+                                   rng,conn_num,dist,sigma,conn_weight):
+    conn_list = []
+
+    for post in xrange(post_size):
+        mu = int(dist / 2) + post * dist
+        an2ch = RandomDistribution('normal', (mu, sigma), rng=rng)
+        an_idxs = an2ch.next(n=conn_num)
+        pre_check = []
+        for pre in an_idxs:
+            pre = int(pre)
+            if pre >= 0 and pre < pre_size:
+                if pre not in pre_check:
+                    if type(conn_weight)==float:
+                        weight = conn_weight
+                    else:#assumes rand dist
+                        weight = conn_weight.next(n=1)
+                    conn_list.append((pre, int(post), weight, 1.))
+                pre_check.append(pre)
+
+    return conn_list
