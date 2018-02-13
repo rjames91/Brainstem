@@ -167,6 +167,17 @@ def multi_spike_raster_plot(spikes_list,plt,duration,ylim,scale_factor=0.001,mar
             plt.ylim(0, ylim)
             plt.xlim(0, duration)
 
+def weight_array_to_group_list(weight_array,from_ids,to_ids):
+    group_weights_to = []
+    group_weights_from = []
+    for id in from_ids:  # group_target_ids:
+        connection_weights_from = [weight for weight in weight_array[id][:] if not math.isnan(weight)]
+        group_weights_from.append(numpy.array(connection_weights_from))
+    for id in to_ids:
+        connection_weights_to = [weight for weight in weight_array[:][id] if not math.isnan(weight)]
+        group_weights_to.append(numpy.array(connection_weights_to))
+    return [group_weights_to,group_weights_from]
+
 def vary_weight_plot(varying_weights,ids,stim_ids,duration,plt,num_recs,np,ylim,title=''):
     varying_weights_array = np.array(varying_weights)
     repeats = np.linspace(0, duration, num_recs)
@@ -180,7 +191,7 @@ def vary_weight_plot(varying_weights,ids,stim_ids,duration,plt,num_recs,np,ylim,
     count=0
     for id in ids:
         plt.subplot(num_rows,num_cols,count+1)
-        weights=varying_weights_array[:,count]
+        weights=varying_weights_array[:,id]
         #every number of connections per neuron over time should be equal(no struc plasticity)
         #insane way to get each time element from the weights list
         times = np.zeros((len(weights[0]),len(weights)))
@@ -196,6 +207,24 @@ def vary_weight_plot(varying_weights,ids,stim_ids,duration,plt,num_recs,np,ylim,
         plt.xlim(0,duration)
         plt.ylim(0,ylim)
         count+=1
+
+def weight_dist_plot(varying_weights,num_ticks,plt,np=numpy):
+    varying_weights_array = np.array(varying_weights)
+    initial_weights = varying_weights_array[0][:]
+    init_weights = []
+    for weights in initial_weights:
+        for weight in weights:
+            init_weights.append(weight)
+    init_weights = np.asarray(init_weights)
+    final_weights = varying_weights_array[-1][:]
+    fin_weights = []
+    for weights in final_weights:
+        for weight in weights:
+            fin_weights.append(weight)
+
+    plt.figure()
+    plt.hist(init_weights,bins=100,alpha=0.5)
+    plt.hist(fin_weights,bins=100,alpha=0.5)
 
 
 def cell_voltage_plot(v,plt,duration,scale_factor=0.001,id=0,title=''):
@@ -331,3 +360,5 @@ def normal_dist_connection_builder(pre_size,post_size,RandomDistribution,
                 pre_check.append(pre)
 
     return conn_list
+
+#TODO:spike sorting algorithm to detect between words and identify unique neuron responses

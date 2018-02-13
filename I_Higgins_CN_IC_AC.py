@@ -7,7 +7,7 @@ import random
 
 psth = True
 en_stdp = True
-num_repeats = 10
+num_repeats = 1
 num_samples = 1
 # Setup pyNN simulation
 timestep =1.
@@ -20,6 +20,7 @@ sim.set_number_of_neurons_per_core(sim.extra_models.IZK_curr_exp, 40)
 spike_ids = [neuron_id for (neuron_id, spike_time) in spike_trains]
 spike_ids[:] = [neuron_id + 1 for neuron_id in spike_ids]
 AN_pop_size = numpy.max(spike_ids)
+AC_pop_size = 5 * AN_pop_size
 spike_times = [spike_time for (neuron_id, spike_time) in spike_trains]
 an_scale_factor = 1./Fs#duration/numpy.max(spike_times)
 scaled_times = [spike_time * an_scale_factor for spike_time in spike_times]
@@ -61,6 +62,8 @@ else:
     spike_times_spinn = numpy.load("./spike_times_spinn_yes4.npy")
     AN_pop = sim.Population(AN_pop_size, sim.SpikeSourceArray, {'spike_times': spike_times_spinn}, label='AN pop')
 
+#spike_raster_plot(spikes_train_an_ms,plt=plt,duration=sim_duration/1000.,ylim=AN_pop_size,scale_factor=0.001,title='AN')
+#plt.show()
 #params taken from I Higgins thesis pg. 121
 IZH_EX_SUBCOR = {'a': 0.02,
                    'b': -0.1,
@@ -101,8 +104,10 @@ PL_pop = sim.Population(AN_pop_size,sim.extra_models.IZK_curr_exp,IZH_EX_SUBCOR,
 ON_pop = sim.Population(AN_pop_size//10.,sim.extra_models.IZK_curr_exp,IZH_EX_SUBCOR,label="CN_Onset")
 ON_pop_inh = sim.Population(AN_pop_size//10.,sim.extra_models.IZK_curr_exp,IZH_INH,label="CN_Onset_inh")
 IC_pop = sim.Population(AN_pop_size,sim.extra_models.IZK_curr_exp,IZH_EX_SUBCOR,label="IC")
-AC_pop = sim.Population(AN_pop_size,sim.extra_models.IZK_curr_exp,IZH_EX_COR,label="AC")
-AC_pop_inh = sim.Population(AN_pop_size,sim.extra_models.IZK_curr_exp,IZH_INH,label="AC_inh")
+AC_pop = sim.Population(AC_pop_size ,sim.extra_models.IZK_curr_exp,IZH_EX_COR,label="AC")
+AC_pop_inh = sim.Population(AC_pop_size ,sim.extra_models.IZK_curr_exp,IZH_INH,label="AC_inh")
+Belt_pop = sim.Population(AC_pop_size ,sim.extra_models.IZK_curr_exp,IZH_EX_COR,label="Belt")
+Belt_pop_inh = sim.Population(AC_pop_size ,sim.extra_models.IZK_curr_exp,IZH_INH,label="Belt_inh")
 
 #TODO: change all weight parameters to random distributions
 
@@ -160,10 +165,10 @@ pl2ic_proj = sim.Projection(PL_pop,IC_pop,sim.OneToOneConnector(weights=pl2ic_we
 #IC-->AC connectivity==================================================================
 tau_plus = 15.
 tau_minus = 25.
-a_plus = 0.005
-a_minus = 0.015
+a_plus = 0.05#0.005
+a_minus = 0.15#0.015
 w_min = 0.
-w_max = 10.
+w_max = 4.#3.
 
 time_dep = sim.SpikePairRule(tau_plus=tau_plus, tau_minus=tau_minus)
 weight_dep = sim.AdditiveWeightDependence(w_min=w_min, w_max=w_max,
@@ -178,28 +183,41 @@ print("************ ------------ using stdp ------------ ***********")
 print("tau_plus = %f\ttau_minus = %f"% (tau_plus, tau_minus))
 print("w_min = %f\tw_max = %f\ta_plus = %f\ta_minus = %f" %
       (w_min, w_max, a_plus, a_minus))
+max_delay = 50.
+ic2ac_delays = RandomDistribution('uniform',parameters=[1,max_delay+1])
 
-ic2ac_delays = RandomDistribution('uniform',parameters=[1,51])
-ic2ac_weights = RandomDistribution('uniform',parameters=[0.,1.])
-
-ic2ac_conn = []
-
+"""ic2ac_conn = []
 for pre in range(AN_pop_size):
     for post in range(AN_pop_size):
         weight = ic2ac_weights.next(n=1)
         delay = int(ic2ac_delays.next(n=1))
         ic2ac_conn.append((pre,post,weight,delay))
-#ic2ac_proj = sim.Projection(IC_pop,AC_pop,sim.FromListConnector(ic2ac_conn),
-#                            target='excitatory',synapse_dynamics=None)#syn_dyn)
-#ic2ac_proj = sim.Projection(IC_pop,AC_pop,sim.AllToAllConnector(weights= ic2ac_weights,delays=ic2ac_delays),
-#                            target='excitatory',synapse_dynamics=None)#syn_dyn)
-ic2ac_proj = sim.Projection(IC_pop,AC_pop,sim.FixedProbabilityConnector(p_connect=0.1,weights=ic2ac_weights,#p_connect=0.01
-                                                                        delays=ic2ac_delays),
+ic2ac_proj = sim.Projection(IC_pop,AC_pop,sim.FromListConnector(ic2ac_conn),
+                            target='excitatory',synapse_dynamics=None)#syn_dyn)"""
+#aiming for around 50 post connections (one for each delay)
+p_connect = max_delay/AC_pop_size # 0.005 # 0.05
+num_incoming_connections = (max_delay * AN_pop_size)/AC_pop_size
+max_weight = 40./num_incoming_connections
+ic2ac_weights = RandomDistribution('uniform',parameters=[0.,max_weight])#w_max/2.])
+
+ic2ac_proj = sim.Projection(IC_pop,AC_pop,sim.FixedProbabilityConnector(p_connect=p_connect,weights=ic2ac_weights,delays=ic2ac_delays),
                             target='excitatory',synapse_dynamics=syn_dyn)
 
 #AC --> AC_inh connectivity
 ac2acinh_proj = sim.Projection(AC_pop,AC_pop_inh,sim.OneToOneConnector(weights=1.0,delays=1.))
 acinh2ac_proj = sim.Projection(AC_pop_inh,AC_pop,sim.AllToAllConnector(weights=0.005,delays=1.),target='inhibitory')
+
+#AC-->Belt connectivity
+num_incoming_connections = (max_delay * AC_pop_size)/AC_pop_size
+max_weight = 40./num_incoming_connections
+ac2belt_weights = RandomDistribution('uniform',parameters=[0,max_weight])#w_max])
+ac2belt_delays = RandomDistribution('uniform',parameters=[1,51])
+ac2belt_proj = sim.Projection(AC_pop,Belt_pop,sim.FixedProbabilityConnector(p_connect=p_connect,weights=ac2belt_weights,#p_connect=0.01
+                                                                        delays=ac2belt_delays),
+                            target='excitatory',synapse_dynamics=syn_dyn)
+#Belt --> Belt_inh connectivity
+belt2beltinh_proj = sim.Projection(Belt_pop,Belt_pop_inh,sim.OneToOneConnector(weights=1.0,delays=1.))
+beltinh2belt_proj = sim.Projection(Belt_pop_inh,Belt_pop,sim.AllToAllConnector(weights=0.005,delays=1.),target='inhibitory')
 
 #setup recordings
 CH_pop.record('spikes')
@@ -221,9 +239,13 @@ IC_pop.record('spikes')
 AC_pop.record('spikes')
 AC_pop_inh.record('spikes')
 
+Belt_pop.record('spikes')
+Belt_pop_inh.record('spikes')
+
 # Run simulation
 if num_repeats>1:
-    varying_weights = []
+    varying_weights_to = []
+    varying_weights_from = []
     for i in range(num_repeats):
 
         sim.run(sim_duration/num_repeats)
@@ -249,25 +271,31 @@ if num_repeats>1:
         AC_spikes = AC_pop.getSpikes()
         ACinh_spikes = AC_pop_inh.getSpikes()
 
-        if en_stdp:
-            ic2ac_weights = ic2ac_proj.getWeights(format="array")
-            group_weights = []
-            for id in range(AN_pop_size):  # group_target_ids:
-                connection_weights = [weight for weight in ic2ac_weights[id][:] if not math.isnan(weight)]
-                group_weights.append(numpy.array(connection_weights))
-            varying_weights.append(numpy.array(group_weights))
+        Belt_spikes = Belt_pop.getSpikes()
+        Beltinh_spikes = Belt_pop_inh.getSpikes()
 
-    varying_weights = numpy.array(varying_weights)
+        if en_stdp:
+
+            ac2belt_weights = ac2belt_proj.getWeights(format="array")
+            [weights_to,weights_from]=weight_array_to_group_list(ac2belt_weights, range(AN_pop_size),range(AN_pop_size))
+            varying_weights_to.append(weights_to)
+            varying_weights_from.append(weights_from)
+
     # End simulation
     sim.end()
 
-    numpy.save("./weights.npy",varying_weights)
+    varying_weights_to = numpy.array(varying_weights_to)
+    varying_weights_from = numpy.array(varying_weights_from)
+    numpy.save("./weights_to_belt.npy",varying_weights_to)
+    numpy.save("./weights_from_ac.npy",varying_weights_from)
+
+    numpy.save('./belt_spikes.npy',Belt_spikes)
 
     ids = RandomDistribution('uniform', parameters=[0, AN_pop_size-1])
     chosen = ids.next(n=100)
     chosen_int = [int(id) for id in chosen]
 
-    vary_weight_plot(varying_weights, chosen_int, [], sim_duration,
+    vary_weight_plot(varying_weights_to, chosen_int, [], sim_duration,
                      plt, np=numpy, num_recs=num_repeats, ylim=w_max + 1)
 
 else:
@@ -293,15 +321,18 @@ else:
     AC_spikes = AC_pop.getSpikes()
     ACinh_spikes = AC_pop_inh.getSpikes()
 
+    Belt_spikes = Belt_pop.getSpikes()
+    Beltinh_spikes = Belt_pop_inh.getSpikes()
+
     sim.end()
 
 #raster plots
 spike_raster_plot(spikes_train_an_ms,plt=plt,duration=sim_duration/1000.,ylim=AN_pop_size,scale_factor=0.001,title='AN')
-spike_raster_plot(CH_spikes,plt=plt,duration=duration,ylim=AN_pop_size,scale_factor=0.001,title='CN Chopper')
+#spike_raster_plot(CH_spikes,plt=plt,duration=duration,ylim=AN_pop_size,scale_factor=0.001,title='CN Chopper')
 #cell_voltage_plot(CH_v,plt=plt,duration=duration,id=760,title='CN Chopper cell id:')
 #spike_raster_plot(CHinh_spikes,plt=plt,duration=duration,ylim=AN_pop_size,scale_factor=0.001,title='CN Chopper inh')
 
-spike_raster_plot(ON_spikes,plt=plt,duration=duration,ylim=AN_pop_size/10,scale_factor=0.001,title='CN Onset')
+#spike_raster_plot(ON_spikes,plt=plt,duration=duration,ylim=AN_pop_size/10,scale_factor=0.001,title='CN Onset')
 #cell_voltage_plot(ON_v,plt=plt,duration=duration,id=76,title='CN Onset v cell id:')
 #cell_voltage_plot(ON_g,plt=plt,duration=duration,id=76,title='CN Onset gsyn cell id:')
 
@@ -311,10 +342,13 @@ spike_raster_plot(ON_spikes,plt=plt,duration=duration,ylim=AN_pop_size/10,scale_
 #spike_raster_plot(PL_spikes,plt=plt,duration=duration,ylim=AN_pop_size,scale_factor=0.001,title='CN Primary-like')
 #cell_voltage_plot(PL_v,plt=plt,duration=duration,id=759,title='CN PL cell id:')
 
-spike_raster_plot(IC_spikes,plt=plt,duration=duration,ylim=AN_pop_size,scale_factor=0.001,title='IC')
+#spike_raster_plot(IC_spikes,plt=plt,duration=duration,ylim=AN_pop_size,scale_factor=0.001,title='IC')
 
-spike_raster_plot(AC_spikes,plt=plt,duration=duration,ylim=AN_pop_size,scale_factor=0.001,title='AC')
-spike_raster_plot(ACinh_spikes,plt=plt,duration=duration,ylim=AN_pop_size,scale_factor=0.001,title='AC inh')
+spike_raster_plot(AC_spikes,plt=plt,duration=duration,ylim=AC_pop_size ,scale_factor=0.001,title='AC')
+#spike_raster_plot(ACinh_spikes,plt=plt,duration=duration,ylim=AN_pop_size,scale_factor=0.001,title='AC inh')
+
+spike_raster_plot(Belt_spikes,plt=plt,duration=duration,ylim=AC_pop_size ,scale_factor=0.001,title='Belt')
+#spike_raster_plot(Beltinh_spikes,plt=plt,duration=duration,ylim=AN_pop_size,scale_factor=0.001,title='Belt inh')
 
 #PSTH plots
 if psth:
@@ -325,6 +359,6 @@ if psth:
     #psth_plot(plt,numpy.arange(700,800),PL_spikes,bin_width=0.001,duration=duration,scale_factor=0.001,Fs=Fs,title="PSTH_PL")
     #psth_plot(plt,numpy.arange(200,400),IC_spikes,bin_width=0.001,duration=duration,scale_factor=0.001,Fs=Fs,title="PSTH_IC")
     #psth_plot(plt,numpy.arange(AN_pop_size/10),ON_spikes,bin_width=0.001,duration=duration,scale_factor=0.001,Fs=Fs,title="PSTH_ON")
-    psth_plot(plt,numpy.arange(AN_pop_size),AC_spikes,bin_width=0.001,duration=duration,scale_factor=0.001,Fs=Fs,title="PSTH_AC")
+    #psth_plot(plt,numpy.arange(AN_pop_size),AC_spikes,bin_width=0.001,duration=duration,scale_factor=0.001,Fs=Fs,title="PSTH_AC")
 
 plt.show()
