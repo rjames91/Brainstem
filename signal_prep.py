@@ -87,21 +87,15 @@ def generate_signal(signal_type="tone",fs=22050.,dBSPL=40.,
     return signal
 
 def generate_psth(target_neuron_ids,spike_trains,bin_width,
-                  duration,scale_factor=0.001,Fs=22050.):
-    scaled_times=[]
-    epochs_per_bin = numpy.round(Fs * bin_width)
-    num_bins = numpy.floor((duration*Fs)/epochs_per_bin)
+                  duration,scale_factor=0.001):
     num_bins = numpy.ceil(duration/bin_width)
     psth = numpy.zeros([len(target_neuron_ids),num_bins])
-    #psth = numpy.zeros([len(target_neuron_ids),num_bins])
     psth_row_index=0
     for i in target_neuron_ids:
         #extract target neuron times and scale
         spike_times = [spike_time for (neuron_id, spike_time) in spike_trains if neuron_id==i]
-        scaled_times= [spike_time * scale_factor for spike_time in spike_times]
+        scaled_times= [spike_time * scale_factor for spike_time in spike_times if spike_time*scale_factor<=duration]
         scaled_times.sort()
-        prev_time = 0.
-        spike_count = 0
         bins = numpy.arange(bin_width,duration,bin_width)
         for j in scaled_times:
             idx = (numpy.abs(bins - j)).argmin()
@@ -115,16 +109,17 @@ def generate_psth(target_neuron_ids,spike_trains,bin_width,
     sum= numpy.sum(psth,axis=0)
     mean = sum/psth_row_index
     output = [count * 1./bin_width for count in mean]
-    #output = (numpy.sum(psth,axis=0)/numpy.round(Fs * bin_width))/(len(target_neuron_ids)/Fs)
     return output
 
 def psth_plot(plt,target_neuron_ids,spike_trains,bin_width,
-                  duration,scale_factor=0.001,Fs=22050.,title='PSTH'):
+                  duration,scale_factor=0.001,title='PSTH'):
     PSTH = generate_psth(target_neuron_ids, spike_trains, bin_width=bin_width,
-                            duration=duration, scale_factor=scale_factor, Fs=Fs)
-    x = numpy.arange(0, duration, duration / float(len(PSTH)))
+                            duration=duration, scale_factor=scale_factor)
+    x = numpy.linspace(0, duration, len(PSTH))
     plt.figure(title)
     plt.plot(x,PSTH)
+    plt.ylabel("firing rate (sp/s)")
+    plt.xlabel("time (s)")
 
 def spike_raster_plot(spikes,plt,duration,ylim,scale_factor=0.001,title=''):
     if len(spikes) > 0:
@@ -139,7 +134,9 @@ def spike_raster_plot(spikes,plt,duration,ylim,scale_factor=0.001,title=''):
                  markerfacecolor='black', markeredgecolor='none',
                  markeredgewidth=0)
         plt.ylim(0, ylim)
-        #plt.xlim(0, duration)
+        plt.xlim(0, duration)
+        plt.ylabel("neuron ID")
+        plt.xlabel("time (s)")
 
 def multi_spike_raster_plot(spikes_list,plt,duration,ylim,scale_factor=0.001,marker_size=3,dopamine_spikes=[],title=''):
     plt.figure(title)
@@ -340,7 +337,7 @@ def spike_train_join(spike_trains,num_neurons):
     return [spike_train_output,max_time]
 
 def normal_dist_connection_builder(pre_size,post_size,RandomDistribution,
-                                   rng,conn_num,dist,sigma,conn_weight):
+                                   rng,conn_num,dist,sigma,conn_weight,delay=1.):
     conn_list = []
 
     for post in xrange(post_size):
@@ -356,9 +353,78 @@ def normal_dist_connection_builder(pre_size,post_size,RandomDistribution,
                         weight = conn_weight
                     else:#assumes rand dist
                         weight = conn_weight.next(n=1)
-                    conn_list.append((pre, int(post), weight, 1.))
+                        if type(delay)!=float:
+                            conn_delay = delay.next(n=1)
+                        else:
+                            conn_delay = delay
+                    conn_list.append((pre, int(post), weight, conn_delay))
                 pre_check.append(pre)
 
     return conn_list
 
-#TODO:spike sorting algorithm to detect between words and identify unique neuron responses
+#find stimulus onset times from AN spikes
+def stimulus_onset_detector(spike_train_an_ms,num_an_fibres,duration,num_classes):
+    #calculate psth with 10ms bin widths across all AN fibres to get average full spectrum response
+    PSTH = generate_psth(range(num_an_fibres), spike_train_an_ms, bin_width=0.01,
+                         duration=duration, scale_factor=0.001)
+    stimulus_times = []
+    for j in range(num_classes):
+        stimulus_times.append([])
+    class_index = 0
+    time_index = 0
+    x = numpy.arange(0, duration, duration / float(len(PSTH)))
+    triggered = False
+    for rate in PSTH:
+        if rate > 50. and triggered == False:
+            stimulus_times[class_index].append(x[time_index] * 1000)
+            if class_index < (num_classes - 1):
+                class_index += 1
+            else:
+                class_index = 0
+            triggered = True
+        if rate < 30 and triggered == True:
+            triggered = False
+        time_index += 1
+
+    return stimulus_times
+
+# stimulus onset times is a list of onset times lists for each stimulus
+# expected time window values of 0.5s - 1s
+# spike time is the output skies from a population, format: [(neuron_id,spike_time),(...),...]
+def neuron_correlation(spike_train,time_window, stimulus_onset_times,max_id,np=numpy):
+    correlations = []#1st dimension is stimulus class
+    #counts = np.asarray([np.zeros(max_id + 1), np.zeros(max_id + 1)])
+    counts=[]
+    stimulus_index = 0
+    for stimulus in stimulus_onset_times:
+        correlations.append([])
+        counts.append(np.zeros(max_id + 1))
+        #loop through each stimulus onset time and check all neuron firing times
+        #save neuron index if firing is within time window of stimulus onset
+        for time in stimulus:
+            for (neuron_id, spike_time) in spike_train:
+                if spike_time > time and spike_time <= (time + time_window) and (neuron_id,time) not in correlations[stimulus_index]:
+                    correlations[stimulus_index].append((neuron_id,time))
+
+        for (id,time) in correlations[stimulus_index]:
+            counts[stimulus_index][id] += 1
+        stimulus_index+=1
+    selective_neuron_ids = []
+    significant_spike_count = 6.#np.mean(counts)
+    for i in range(len(counts)):
+        id_count = 0
+        selective_neuron_ids.append([])
+        for count in counts[i]:
+            if count >= significant_spike_count:
+                others = range(len(counts))
+                others.remove(i)
+                # check neuron doesn't respond to other stimuli
+                # ensures neuron response is exclusive to a single class
+                exclusive = True
+                for j in others:
+                    if counts[j][id_count] >= significant_spike_count:  # !=0:#
+                        exclusive = False
+                if exclusive:
+                    selective_neuron_ids[i].append(id_count)
+            id_count += 1
+    return np.asarray(counts),selective_neuron_ids,significant_spike_count#correlations

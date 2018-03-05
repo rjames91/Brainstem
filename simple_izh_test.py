@@ -13,12 +13,14 @@ IZH_EX_SUBCOR = {'a': 0.02,
                    'b': -0.1,
                    'c': -55,
                    'd': 6,
-                  # 'v_thresh': 30
                    'v_init': -75,
-                   'u_init': 10.,#0.,
-                   #'tau_syn_E': 3,
-                   #'tau_syn_I': 10,
-                   #'i_offset': -15.
+                   'u_init': 10.,
+                   }
+
+IZH_EX_COR = {'a': 0.01,
+                   'b': 0.2,
+                   'c': -65,
+                   'd': 8,
                    }
 
 IZH_INH = {'a': 0.02,
@@ -38,16 +40,16 @@ inh_pop = sim.Population(10,sim.extra_models.IZK_curr_exp,IZH_INH,label="CN_Onse
 
 sim.Projection(source_pop,on_pop,sim.AllToAllConnector(30.,1))
 
-sim.Projection(on_pop,inh_pop,sim.OneToOneConnector(20.,1))
+sim.Projection(on_pop,inh_pop,sim.OneToOneConnector(10.,1))
 
-sim.Projection(inh_pop,on_pop,sim.AllToAllConnector(5.,1.),target='inhibitory')
+sim.Projection(inh_pop,on_pop,sim.AllToAllConnector(50.,1.),target='inhibitory')
 
 on_pop.record('spikes')
 on_pop.record_v()
 inh_pop.record('spikes')
 inh_pop.record_v()
 
-duration = 20.
+duration = 100.
 sim.run(duration)
 
 ON_spikes = on_pop.getSpikes()
