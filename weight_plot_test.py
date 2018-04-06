@@ -7,7 +7,7 @@ sim_duration = 10000.#46349.#
 w_max = 0.25#10.
 
 varying_weights = numpy.load("./weights_to_belt.npy")
-ids = RandomDistribution('uniform',parameters=[0,999])
+ids = RandomDistribution('uniform',(0,99))
 chosen=ids.next(n=12)
 chosen_int = [int(id) for id in chosen]
 #chosen_int = [380]#single target id
