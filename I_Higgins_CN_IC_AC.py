@@ -6,7 +6,7 @@ from signal_prep import *
 from pyNN.random import NumpyRNG, RandomDistribution
 import random
 
-psth = False#True
+psth = True#False#
 en_stdp = True #False#
 # Setup pyNN simulation
 timestep =1.#0.5#
@@ -21,7 +21,7 @@ sim.set_number_of_neurons_per_core(sim.IF_curr_exp, 128)
 spike_ids = [neuron_id for (neuron_id, spike_time) in spike_trains]
 spike_ids[:] = [neuron_id + 1 for neuron_id in spike_ids]
 AN_pop_size = 1000#numpy.max(spike_ids)#
-AC_pop_size = 10 #* AN_pop_size
+AC_pop_size = 100 #* AN_pop_size
 spike_times = [spike_time for (neuron_id, spike_time) in spike_trains]
 an_scale_factor = 1./Fs#duration/numpy.max(spike_times)
 scaled_times = [spike_time * an_scale_factor for spike_time in spike_times]
@@ -93,8 +93,8 @@ IC_pop = sim.Population(AN_pop_size,sim.Izhikevich,IZH_EX_SUBCOR,label="IC")
 # Belt2_pop = sim.Population(AC_pop_size ,sim.Izhikevich,IZH_EX_COR,label="Belt2")
 # Belt2_pop_inh = sim.Population(AC_pop_size ,sim.Izhikevich,IZH_INH,label="Belt2_inh")
 
-AC_pop = sim.Population(AC_pop_size ,sim.IF_curr_exp,LIF_cell_params,label="AC")
-#AC_pop_inh = sim.Population(AC_pop_size ,sim.IF_curr_exp,LIF_cell_params,label="AC_inh")
+AC_pop = sim.Population(AC_pop_size ,sim.IF_curr_exp,LIF_cell_params,label="target")
+AC_pop_inh = sim.Population(AC_pop_size ,sim.IF_curr_exp,LIF_cell_params,label="AC_inh")
 
 #AN --> CH connectivity==================================================================
 an2ch_weight = RandomDistribution('uniform',(0.5,0.8))#[0.7,0.8])#[0.,2.])#[1.,2.])#10.#25.
@@ -153,12 +153,12 @@ pl2ic_proj = sim.Projection(PL_pop,IC_pop,sim.OneToOneConnector(),synapse_type=s
 tau_factor = 1./timestep
 tau_plus = 16#16.7*tau_factor
 tau_minus = 30#33.7*tau_factor
-a_plus = 0.05#0.005#0.0075
-a_minus = 0.05#0.005#0.005
+a_plus = 0.01#0.005#0.0075
+a_minus = 0.05#0.05#0.005#0.005
 w2s= 2.#20.
 w_min = 0.
-w_max = w2s/2#0.25#2.5#80./50.#40./1000.#0.05#4.#3.
-av_weight = w_max/2.
+w_max = w2s/2#w2s/4.#0.25#2.5#80./50.#40./1000.#0.05#4.#3.
+av_weight = w_max/2.#w_max#
 ten_perc = av_weight/10.
 stdp_weights = RandomDistribution('uniform',(av_weight-ten_perc,av_weight+ten_perc))
 stdp_delays = RandomDistribution('uniform',(1,51.))
@@ -179,9 +179,27 @@ print("w_min = %f\tw_max = %f\ta_plus = %f\ta_minus = %f" %
 #num_post_conn = 50.#10.#1000.
 #p_connect = num_post_conn/AC_pop_size #1.# 0.005 # 0.05
 #num_incoming_connections = (num_post_conn * AN_pop_size)/AC_pop_size#AN_pop_size#
-#ic2ac_proj = sim.Projection(IC_pop,AC_pop,sim.FixedProbabilityConnector(p_connect=p_connect,weights=ic2ac_weights,delays=ic2ac_delays),
-#                            target='excitatory',synapse_dynamics=syn_dyn)
-ic2ac_proj = sim.Projection(IC_pop,AC_pop,sim.AllToAllConnector(),synapse_type=stdp,receptor_type='excitatory')
+p_connect = 1.0
+#create manual fixed prob connector list so I can identify number of connections per AC neuron pre simulation
+# ac_connections=numpy.zeros(AC_pop_size)
+# ic2ac_list =[]
+# for i in range(AN_pop_size):
+#     probs = numpy.random.rand(AC_pop_size)
+#     present = probs < p_connect
+#     ac_connections=numpy.add(ac_connections,present.astype(numpy.int))
+#     ids = numpy.where(present)[0]
+#     for id in ids:
+#         ic2ac_list.append((i,id))
+#
+# ic2ac_proj = sim.Projection(IC_pop,AC_pop,sim.FromListConnector(ic2ac_list),synapse_type=stdp,receptor_type="excitatory")
+
+ic2ac_proj = sim.Projection(
+    IC_pop, AC_pop, sim.FixedProbabilityConnector(p_connect=p_connect),
+        synapse_type=stdp,receptor_type="excitatory", source=None, space=None)
+weights = ic2ac_proj.get("weight", "list", with_address=True)
+
+
+#ic2ac_proj = sim.Projection(IC_pop,AC_pop,sim.AllToAllConnector(),synapse_type=stdp,receptor_type='excitatory')
 # ic2ac_proj = sim.Projection(AN_pop,AC_pop,sim.AllToAllConnector(),synapse_type=stdp,receptor_type='excitatory')
 
 #ic2ac_proj = sim.Projection(IC_pop,AC_pop,sim.OneToOneConnector(weights=30.,delays=ic2ac_delays),
@@ -200,7 +218,8 @@ conn_num = int(sigma / in2out_sparse)
 #ac2acinh_proj = sim.Projection(AC_pop,AC_pop_inh,sim.OneToOneConnector(),synapse_type=sim.StaticSynapse(weight=1.0,delay=1.))
 #acinh2ac_proj = sim.Projection(AC_pop_inh,AC_pop,sim.AllToAllConnector(),synapse_type=sim.StaticSynapse(weight=0.005,delay=1.),
 #                               receptor_type='inhibitory')
-
+#acinh2ac_proj = sim.Projection(AC_pop_inh,AC_pop,sim.AllToAllConnector(),synapse_type=sim.StaticSynapse(weight=0.001,delay=1.),
+#                               receptor_type='inhibitory')
 #AC-->Belt connectivity
 #num_incoming_connections = (num_post_conn * AC_pop_size)/AC_pop_size#AC_pop_size#
 # num_post_conn = 10.
@@ -257,10 +276,12 @@ AC_pop.record('spikes')
 
 # Run simulation
 if num_repeats>1:
-    varying_weights = [[]]
+    varying_weights = []
+    run_one = True
     # add initial weights
-    for i in range(AC_pop_size):
-        varying_weights[0].append(stdp_weights.next(n=AN_pop_size))
+    # varying_weights = [[]]
+    # for i in range(AC_pop_size):
+    #    varying_weights[0].append(stdp_weights.next(n=ac_connections[i]))
 
     for i in range(num_repeats):
 
@@ -293,8 +314,21 @@ if num_repeats>1:
         # Belt2_spikes = Belt2_pop.getSpikes()
 
         if en_stdp:# and (i==0 or i==(num_repeats-1)):
-            weights = ic2ac_proj.get("weight", "list", with_address=False)
-            weights_list = [weights[i:i+AN_pop_size-1] for i in range(0,len(weights),AN_pop_size)]
+            if run_one:
+                weights_list = [[] for _ in range(AC_pop_size)]
+                # add weights for all incoming connections to each AC neuron
+                for (pre, post, weight) in weights:
+                    weights_list[post].append(weight)
+                # weights_list = [weights[i:i+AN_pop_size-1] for i in range(0,len(weights),AN_pop_size)]
+                varying_weights.append(weights_list)
+                run_one=False
+            weights = ic2ac_proj.get("weight", "list", with_address=True)
+            #make empty list for each AC neuron
+            weights_list = [[]for _ in range(AC_pop_size)]
+            #add weights for all incoming connections to each AC neuron
+            for (pre, post, weight) in weights:
+                weights_list[post].append(weight)
+            #weights_list = [weights[i:i+AN_pop_size-1] for i in range(0,len(weights),AN_pop_size)]
             varying_weights.append(weights_list)
 
     # End simulation
@@ -326,6 +360,7 @@ else:
     sim.end()
 
 # numpy.save('./ic_spikes.npy', IC_data.segments[0].spiketrains)
+numpy.save('./ac_spikes.npy', AC_data.segments[0].spiketrains)
 #numpy.save('./belt_spikes.npy', Belt_spikes)
 #numpy.save('./belt2_spikes.npy', Belt2_spikes)
 #raster plots
@@ -353,7 +388,7 @@ chosen_int = range(AC_pop_size)#numpy.random.choice(AN_pop_size, 12, replace=Fal
 vary_weight_plot(varying_weights,chosen_int,[],sim_duration,
                          plt,np=numpy,num_recs=int(num_repeats+1),ylim=w_max+(w_max/10.))
 
-weight_dist_plot(varying_weights,1,plt)
+weight_dist_plot(varying_weights,1,plt,w_min,w_max)
 
 
 #spike_raster_plot_8(Belt_spikes,plt=plt,duration=sim_duration/1000.,ylim=AC_pop_size ,scale_factor=0.001,title='Belt')
@@ -368,7 +403,7 @@ if psth:
     #psth_plot(plt,numpy.arange(400,600),CH_spikes,bin_width=0.001,duration=sim_duration/1000.,scale_factor=0.001,title="PSTH_CH")
     #psth_plot(plt,numpy.arange(700,800),CHinh_spikes,bin_width=0.001,duration=sim_duration/1000.,scale_factor=0.001,title="PSTH_CH_inh")
     #psth_plot(plt,numpy.arange(400,600),PL_spikes,bin_width=0.001,duration=sim_duration/1000.,scale_factor=0.001,title="PSTH_PL")
-    psth_plot_8(plt,numpy.arange(100),IC_data.segments[0].spiketrains,bin_width=0.001,duration=sim_duration/1000.,scale_factor=0.001,title="PSTH_IC")
+    #psth_plot_8(plt,numpy.arange(100),IC_data.segments[0].spiketrains,bin_width=0.001,duration=sim_duration/1000.,scale_factor=0.001,title="PSTH_IC")
     #psth_plot(plt,numpy.arange(AN_pop_size/10),ON_spikes,bin_width=0.001,duration=sim_duration/1000.,scale_factor=0.001,title="PSTH_ON")
     psth_plot_8(plt,range(AC_pop_size),AC_data.segments[0].spiketrains,1,duration=sim_duration/1000.,title="PSTH_AC")
     #psth_plot(plt,numpy.arange(AN_pop_size),Belt_spikes,bin_width=0.001,duration=sim_duration/1000.,scale_factor=0.001,title="PSTH_Belt")

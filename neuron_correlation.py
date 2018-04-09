@@ -4,28 +4,28 @@ import matplotlib.pylab as plt
 from scipy.io import loadmat
 
 #spike_train = [(0,30),(0,50),(2,35),(10,100),(10,101)]
-spike_train = np.load('./belt_spikes.npy')#np.load('./ac_spikes.npy')#
+spike_train = np.load('./ac_spikes.npy')#np.load('./belt_spikes.npy')#
 
 matlab_spikes = loadmat('./belt_spikes.mat')
 ids = [id for id in matlab_spikes['output'][0]]
 times = [time*1000. for time in matlab_spikes['output'][1]]
 max_time = max(times)
-spike_train = [(ids[i],times[i]) for i in range(len(ids))]
+#spike_train = [(ids[i],times[i]) for i in range(len(ids))]
 
-ids = [id for (id,time) in spike_train]
-max_id = max(ids)
+#ids = [id for (id,time) in spike_train]
+max_id = len(spike_train)#max(ids)
 num_classes = 2
 timestep =1.
 time_window = 600
 
 #open an spikes to identify stimulus times
-[spikes_train_an_ms,duration] = np.load('./spike_times_an_alt.npy')#
-#[spike_trains,duration,Fs]=numpy.load("/home/rjames/Dropbox (The University of Manchester)/EarProject/spike_trains_10sp_2num_5rep.npy")
+# [spikes_train_an_ms,duration] = np.load('./spike_times_an_alt.npy')#
+[spike_trains,duration,Fs]=numpy.load("/home/rjames/Dropbox (The University of Manchester)/EarProject/spike_trains_10sp_2num_5rep.npy")
 #duration = 10.
 print "duration= {} seconds".format(duration)
 num_repeats = int(numpy.ceil(duration/4.))
-#an_scale_factor = 1./Fs#duration/numpy.max(spike_times)
-#spikes_train_an_ms = [(neuron_id,int(1000*timestep*an_scale_factor*spike_time)) for (neuron_id,spike_time) in spike_trains if (spike_time*an_scale_factor)<=duration]
+an_scale_factor = 1./Fs#duration/numpy.max(spike_times)
+spikes_train_an_ms = [(neuron_id,int(1000*timestep*an_scale_factor*spike_time)) for (neuron_id,spike_time) in spike_trains if (spike_time*an_scale_factor)<=duration]
 
 #psth_plot(plt,numpy.arange(1000),spike_train,bin_width=0.01,duration=duration,scale_factor=0.001,title="PSTH_Belt")
 stimulus_times = stimulus_onset_detector(spikes_train_an_ms,1000,duration,num_classes)
