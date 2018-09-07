@@ -20,11 +20,12 @@ time_window = 600
 
 #open an spikes to identify stimulus times
 # [spikes_train_an_ms,duration] = np.load('./spike_times_an_alt.npy')#
-[spike_trains,duration,Fs]=numpy.load("/home/rjames/Dropbox (The University of Manchester)/EarProject/spike_trains_10sp_2num_5rep.npy")
-#duration = 10.
+#[spike_trains,duration,Fs]=numpy.load("/home/rjames/Dropbox (The University of Manchester)/EarProject/spike_trains_1sp_1num_1000rep.npy")
+[spike_trains,an_scale_factor]=numpy.load("../OME_SpiNN/spike_trains_1sp_1num_1000rep.npy")
+
+duration = 420.
 print "duration= {} seconds".format(duration)
-num_repeats = int(numpy.ceil(duration/4.))
-an_scale_factor = 1./Fs#duration/numpy.max(spike_times)
+#an_scale_factor = 1./Fs#duration/numpy.max(spike_times)
 spikes_train_an_ms = [(neuron_id,int(1000*timestep*an_scale_factor*spike_time)) for (neuron_id,spike_time) in spike_trains if (spike_time*an_scale_factor)<=duration]
 
 #psth_plot(plt,numpy.arange(1000),spike_train,bin_width=0.01,duration=duration,scale_factor=0.001,title="PSTH_Belt")
