@@ -386,8 +386,8 @@ else:
 num_repeats+=1
 dir=results_directory#'../OME_SpiNN/yes_samples/'
 
-numpy.savez_compressed(results_directory+'/brainstem_asc_des_{}s'.format(int(sim_duration/1000.)),
-                       ic_times=IC_data.segments[0].spiketrains,onset_times=onset_times,dBSPL=dBSPL)
+numpy.savez_compressed(results_directory+'/brainstem_asc_des_{}s_{}dB'.format(int(sim_duration/1000.),int(dBSPL)),
+                       ic_times=IC_data.segments[0].spiketrains,onset_times=onset_times)
 print "IC spikes saved"
 # numpy.save(dir+'/ic_spikes_asc.npy', IC_data.segments[0].spiketrains)
 # numpy.save('./ac_spikes.npy', AC_data.segments[0].spiketrains)
