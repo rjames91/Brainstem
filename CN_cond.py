@@ -46,20 +46,22 @@ on_params_cond = {#'cm': 0.25,  # nF
                'v_thresh': -39.5
                }
 
-dB = 40#20
+dB = 50#40#20
 input_directory = '/home/rjames/Dropbox (The University of Manchester)/EarProject/Pattern_recognition/spike_trains/IC_spikes'
-cochlea_file = np.load(input_directory + '/spinnakear_1kHz_60s_{}dB.npz'.format(dB))
+# cochlea_file = np.load(input_directory + '/spinnakear_1kHz_60s_{}dB.npz'.format(dB))
+cochlea_file = np.load(input_directory + '/spinnakear_13.5kHz_25s_{}dB.npz'.format(dB))
 an_spikes = cochlea_file['scaled_times']
+onset_times = cochlea_file['onset_times']
 
-w2s_target = 1.#1.5#4.5#0.12#2.5#5.
+w2s_target = 0.5#1.#1.5#4.5#0.12#2.5#5.
 number_of_inputs = len(an_spikes)#
 input_spikes = an_spikes
 
 #================================================================================================
 # SpiNNaker setup
 #================================================================================================
-sim.setup(timestep=1.0, min_delay=1.0, max_delay=51.0)
-sim.set_number_of_neurons_per_core(sim.IF_cond_exp,32)
+sim.setup(timestep=1., min_delay=1.0, max_delay=51.0)
+sim.set_number_of_neurons_per_core(sim.IF_cond_exp,8)
 
 #================================================================================================
 # Populations
@@ -102,35 +104,44 @@ n_on_inputs = 100.#50.
 an_on_p_connect = 0.45
 # an_on_weight = w2s_target/(n_on_inputs)
 # an_on_weight = 1.5/(n_on_inputs)
-av_weight = 0.0015#0.0055#0.005#0.0025
+av_weight = 0.0015#0.002#0.00125#0.0055#0.005#
 # an_on_weight =RandomDistribution('uniform',[0.9*av_weight,1.1*av_weight])
 # an_on_weight =RandomDistribution('uniform',[0,av_weight])
 an_on_weight =RandomDistribution('normal_clipped',[av_weight,av_weight/10.,0,2*av_weight])
 
 an_on_projection = sim.Projection(input_pop,on_pop,sim.FixedProbabilityConnector(p_connect=an_on_p_connect),sim.StaticSynapse(weight=an_on_weight))
 
-sigma = 2.
-conn_num = int(sigma / in2out_sparse)
-on2on_weight = RandomDistribution('uniform',[0.,1.])
-# on2on_list = normal_dist_connection_builder(on_pop_size,on_pop_size,RandomDistribution,NumpyRNG(),conn_num,dist,sigma)
-# on_on_projection = sim.Projection(on_pop,on_pop,sim.FromListConnector(on2on_list),synapse_type=sim.StaticSynapse(weight=on2on_weight),receptor_type='inhibitory')
-on_on_projection = sim.Projection(on_pop,on_pop,sim.FixedProbabilityConnector(p_connect=0.01),
+p_local_connection = 0.01
+on2on_weight = RandomDistribution('uniform',[0.,0.1])
+on_on_projection = sim.Projection(on_pop,on_pop,sim.FixedProbabilityConnector(p_connect=p_local_connection),
                                   synapse_type=sim.StaticSynapse(weight=on2on_weight),receptor_type='inhibitory')
 
-on_ch_projection = sim.Projection(on_pop,ch_pop,sim.FixedProbabilityConnector(p_connect=0.1),
+on_ch_projection = sim.Projection(on_pop,ch_pop,sim.FixedProbabilityConnector(p_connect=p_local_connection),
                                   synapse_type=sim.StaticSynapse(weight=on2on_weight),receptor_type='inhibitory')
 
-duration = 1000.#max(input_spikes[0])
+ch_on_projection = sim.Projection(ch_pop,on_pop,sim.FixedProbabilityConnector(p_connect=p_local_connection),
+                                  synapse_type=sim.StaticSynapse(weight=an_on_weight))
+ch_ch_projection = sim.Projection(ch_pop,ch_pop,sim.FixedProbabilityConnector(p_connect=p_local_connection),
+                                  synapse_type=sim.StaticSynapse(weight=an_on_weight))
 
-sim.run(duration)
+
+duration = 25000.#max(input_spikes[0])
+max_period = 8000.#60000.#
+num_recordings =int((duration/max_period)+1)
+
+for i in range(num_recordings):
+    sim.run(duration/num_recordings)
+
 ch_data = ch_pop.get_data(["spikes","v"])
 on_data = on_pop.get_data(["spikes","v"])
 sim.end()
 
 ch_mem_v = ch_data.segments[0].filter(name='v')
-cell_voltage_plot_8(ch_mem_v, plt, duration, [],id=599,scale_factor=0.001,title='ch pop')
+# cell_voltage_plot_8(ch_mem_v, plt, duration, [],id=599,scale_factor=0.001,title='ch pop')
+cell_voltage_plot_8(ch_mem_v, plt, duration, [],id=0,scale_factor=0.001,title='ch pop')
 on_mem_v = on_data.segments[0].filter(name='v')
-cell_voltage_plot_8(on_mem_v, plt, duration, [],id=59,scale_factor=0.001,title='on pop')
+# cell_voltage_plot_8(on_mem_v, plt, duration, [],id=59,scale_factor=0.001,title='on pop')
+cell_voltage_plot_8(on_mem_v, plt, duration, [],id=0,scale_factor=0.001,title='on pop')
 
 ch_spikes = ch_data.segments[0].spiketrains
 on_spikes = on_data.segments[0].spiketrains
@@ -139,8 +150,23 @@ spike_raster_plot_8(ch_spikes,plt,duration/1000.,number_of_inputs+1,0.001,title=
 spike_raster_plot_8(on_spikes,plt,duration/1000.,on_pop_size+1,0.001,title="on pop activity")
 spike_raster_plot_8(input_spikes,plt,duration/1000.,number_of_inputs+1,0.001,title="input activity")
 
-psth_plot_8(plt,numpy.arange(550,650),an_spikes,bin_width=0.01,duration=duration/1000.,title="PSTH_AN")
-psth_plot_8(plt,numpy.arange(550,650),ch_spikes,bin_width=0.01,duration=duration/1000.,title="PSTH_CH")
-psth_plot_8(plt,numpy.arange(55,65),on_spikes,bin_width=0.01,duration=duration/1000.,title="PSTH_ON")
+#go through all spikes from onset time -10ms to onset time + 60ms and add this value - the corresponding onset time offset to a new row in a matrix of responses
+#the pre-existing psth function can then be used to plot the output of these collective responses
+test_neuron_id = 899
+spikes = ch_spikes[test_neuron_id]
+psth_spikes = []
+for i,stimulus in enumerate(onset_times):
+    psth_spikes.append([])
+    for onset_time in stimulus:
+        a = spikes[spikes>onset_time-10.]
+        b = a[a<=onset_time+60.]
+        c = np.asarray([x.item() for x in b])
+        psth_spikes[i].append(c-onset_time-10)
+
+psth_plot_8(plt,numpy.arange(len(psth_spikes[0])),psth_spikes[0],bin_width=0.01,duration=0.1,title="PSTH_CH")
+
+# psth_plot_8(plt,numpy.arange(550,650),an_spikes,bin_width=0.01,duration=duration/1000.,title="PSTH_AN")
+# psth_plot_8(plt,numpy.arange(550,650),ch_spikes,bin_width=0.01,duration=duration/1000.,title="PSTH_CH")
+# psth_plot_8(plt,numpy.arange(55,65),on_spikes,bin_width=0.01,duration=duration/1000.,title="PSTH_ON")
 
 plt.show()
