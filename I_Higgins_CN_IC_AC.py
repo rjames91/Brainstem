@@ -12,7 +12,8 @@ en_stdp = True #False#
 timestep =1.#0.5#
 sim.setup(timestep=timestep,max_delay=51.,min_delay=timestep)
 # sim.set_number_of_neurons_per_core(sim.Izhikevich, 128)
-sim.set_number_of_neurons_per_core(sim.Izhikevich, 64)
+# sim.set_number_of_neurons_per_core(sim.Izhikevich, 64)
+sim.set_number_of_neurons_per_core(sim.Izhikevich, 32)
 sim.set_number_of_neurons_per_core(sim.IF_curr_exp, 16)
 #sim.set_number_of_neurons_per_core(sim.SpikeSourceArray,128)
 
@@ -23,10 +24,11 @@ sim.set_number_of_neurons_per_core(sim.IF_curr_exp, 16)
 # num_patterns =2
 # stim_times = numpy.load('../../OME_SpiNN/spike_times_1sp_{}num_300rep.npy'.format(num_patterns))
 #stim_times = numpy.load('../OME_SpiNN/spike_trains_yes.npy')
-results_directory = "/home/rjames/Dropbox (The University of Manchester)/EarProject/Pattern_recognition/spike_trains/AN_spikes"
+results_directory = "/home/rjames/Dropbox (The University of Manchester)/EarProject/Pattern_recognition/spike_trains/IC_spikes"
 #stim_times=numpy.load(results_directory+'/spike_trains_asc_train_15s.npy')
 
-ear_file = numpy.load(results_directory + '/spinnakear_asc_des_60s_60dB.npz')
+# ear_file = numpy.load(results_directory + '/spinnakear_asc_des_60s_60dB.npz')
+ear_file = numpy.load(results_directory + '/spinnakear_13.5_1_kHz_38s_50dB_1000fibres.npz')
 stim_times = ear_file['scaled_times']
 onset_times = ear_file['onset_times']
 dBSPL = ear_file['dBSPL']
@@ -36,7 +38,8 @@ duration=0
 for train in stim_times:
     if train.size>0 and train.max()>duration:
         duration = train.max()
-sim_duration=duration.item()
+# sim_duration=duration.item()
+sim_duration = 1000.
 
 AN_pop_size = len(stim_times)#numpy.max(spike_ids)#1000#
 AC_pop_size = 128 #* AN_pop_size
@@ -101,11 +104,11 @@ LIF_cell_params = {'cm': 0.25,  # nF
 
 #create populations==================================================================
 CH_pop = sim.Population(AN_pop_size,sim.Izhikevich,IZH_EX_SUBCOR,label="CN_Chopper")
-CH_pop_inh = sim.Population(AN_pop_size,sim.Izhikevich,IZH_INH,label="CN_Chopper_inh")
-PL_pop = sim.Population(AN_pop_size,sim.Izhikevich,IZH_EX_SUBCOR,label="CN_Primary like")
-ON_pop = sim.Population(int(AN_pop_size/10.),sim.Izhikevich,IZH_EX_SUBCOR,label="CN_Onset")
-ON_pop_inh = sim.Population(int(AN_pop_size/10.),sim.Izhikevich,IZH_INH,label="CN_Onset_inh")
-IC_pop = sim.Population(AN_pop_size,sim.Izhikevich,IZH_EX_SUBCOR,label="IC")
+# CH_pop_inh = sim.Population(AN_pop_size,sim.Izhikevich,IZH_INH,label="CN_Chopper_inh")
+# PL_pop = sim.Population(AN_pop_size,sim.Izhikevich,IZH_EX_SUBCOR,label="CN_Primary like")
+ON_pop = sim.Population(int(AN_pop_size/2.),sim.Izhikevich,IZH_EX_SUBCOR,label="CN_Onset")
+# ON_pop_inh = sim.Population(int(AN_pop_size/10.),sim.Izhikevich,IZH_INH,label="CN_Onset_inh")
+# IC_pop = sim.Population(AN_pop_size,sim.Izhikevich,IZH_EX_SUBCOR,label="IC")
 
 VNTB_pop_size = 200#170
 VNTB_pop = sim.Population(VNTB_pop_size,sim.Izhikevich,IZH_EX_SUBCOR,label="VNTB")
@@ -124,8 +127,8 @@ VNTB_pop = sim.Population(VNTB_pop_size,sim.Izhikevich,IZH_EX_SUBCOR,label="VNTB
 an2ch_weight = RandomDistribution('uniform',(0.5,0.8))#[0.7,0.8])#[0.,2.])#[1.,2.])#10.#25.
 #an2ch_fan = 5
 # diagonal_width = 26.
-diagonal_width = AN_pop_size/38.46
-
+# diagonal_width = AN_pop_size/38.46
+diagonal_width = 2.24#
 diagonal_sparseness = 1.
 in2out_sparse = .67 * .67 / diagonal_sparseness
 dist = max(int(AN_pop_size / AN_pop_size), 1)
@@ -133,28 +136,29 @@ sigma = dist * diagonal_width
 conn_num = int(sigma / in2out_sparse)
 an2ch_list = normal_dist_connection_builder(AN_pop_size,AN_pop_size,RandomDistribution,NumpyRNG(),
                                             conn_num,dist,sigma,an2ch_weight)
-#an2ch_proj = sim.Projection(AN_pop,CH_pop,sim.FromListConnector(an2ch_list))
+an2ch_proj = sim.Projection(AN_pop,CH_pop,sim.FromListConnector(an2ch_list))
 
 #CH --> CH_inh connectivity==================================================================
-ch2chinh_proj = sim.Projection(CH_pop,CH_pop_inh,sim.OneToOneConnector(),synapse_type=sim.StaticSynapse(weight=0.5))
+# ch2chinh_proj = sim.Projection(CH_pop,CH_pop_inh,sim.OneToOneConnector(),synapse_type=sim.StaticSynapse(weight=0.5))
 #CH_inh --> CH connectivity==================================================================
-chinh2ch_proj = sim.Projection(CH_pop_inh,CH_pop,sim.AllToAllConnector(),synapse_type=sim.StaticSynapse(weight=0.1),
-                               receptor_type='inhibitory')
+# chinh2ch_proj = sim.Projection(CH_pop_inh,CH_pop,sim.AllToAllConnector(),synapse_type=sim.StaticSynapse(weight=0.1),
+#                                receptor_type='inhibitory')
 
 #AN --> ON connectivity==================================================================
-an2on_prob=400./AN_pop_size
-#an2on_prob=0.4#0.15#0.6#0.54#
-an2on_weight =RandomDistribution('uniform',(0.05,0.15))
-#an2on_proj = sim.Projection(AN_pop,ON_pop,sim.FixedProbabilityConnector(p_connect=an2on_prob,allow_self_connections=False),
-#                            synapse_type=sim.StaticSynapse(weight=an2on_weight,delay=1))
+# an2on_prob=400./AN_pop_size
+an2on_prob=1.*(88./AN_pop_size)#0.4#0.15#0.6#0.54#
+# an2on_weight =RandomDistribution('uniform',(0.05,0.15))
+an2on_weight =RandomDistribution('uniform',(0.,5.))
+an2on_proj = sim.Projection(AN_pop,ON_pop,sim.FixedProbabilityConnector(p_connect=an2on_prob),
+                           synapse_type=sim.StaticSynapse(weight=an2on_weight,delay=1))
 #ON --> ON_inh connectivity==================================================================
-on2oninh_proj = sim.Projection(ON_pop,ON_pop_inh,sim.OneToOneConnector(),synapse_type=sim.StaticSynapse(weight=15.,delay=1.))
-oninh2on_proj = sim.Projection(ON_pop_inh,ON_pop,sim.AllToAllConnector(),synapse_type=sim.StaticSynapse(weight=0.3,delay=1.),
-                               receptor_type='inhibitory')
+# on2oninh_proj = sim.Projection(ON_pop,ON_pop_inh,sim.OneToOneConnector(),synapse_type=sim.StaticSynapse(weight=15.,delay=1.))
+# oninh2on_proj = sim.Projection(ON_pop_inh,ON_pop,sim.AllToAllConnector(),synapse_type=sim.StaticSynapse(weight=0.3,delay=1.),
+#                                receptor_type='inhibitory')
 
 #AN --> PL connectivity==================================================================
 an2pl_weight =RandomDistribution('uniform',(25.,40.))#[25.,35.])#
-an2pl_proj = sim.Projection(AN_pop,PL_pop,sim.OneToOneConnector(),synapse_type=sim.StaticSynapse(weight=an2pl_weight,delay=1.0))#(weights=40.,delays=1.0))#
+# an2pl_proj = sim.Projection(AN_pop,PL_pop,sim.OneToOneConnector(),synapse_type=sim.StaticSynapse(weight=an2pl_weight,delay=1.0))#(weights=40.,delays=1.0))#
 
 #CH --> IC connectivity==================================================================
 ch2ic_weight = RandomDistribution('uniform',(10.,12.))#[4.,5.])
@@ -167,7 +171,7 @@ sigma = dist * diagonal_width
 conn_num = int(sigma / in2out_sparse)
 ch2ic_list = normal_dist_connection_builder(AN_pop_size,AN_pop_size,RandomDistribution,NumpyRNG(),
                                             conn_num,dist,sigma,ch2ic_weight)
-ch2ic_proj = sim.Projection(CH_pop,IC_pop,sim.FromListConnector(ch2ic_list))
+# ch2ic_proj = sim.Projection(CH_pop,IC_pop,sim.FromListConnector(ch2ic_list))
 
 #CH --> VNTB connectivity==================================================================
 ch2vntb_weight = RandomDistribution('uniform',(10.,15.))#20.#
@@ -184,12 +188,12 @@ ch2vntb_proj = sim.Projection(CH_pop,VNTB_pop,sim.FromListConnector(ch2vntb_list
 
 #ON --> IC connectivity==================================================================
 on2ic_weight = RandomDistribution('uniform',(0.01,0.05))#[0,0.1])
-on2ic_proj = sim.Projection(ON_pop,IC_pop,sim.AllToAllConnector(),synapse_type=sim.StaticSynapse(weight=on2ic_weight))
+# on2ic_proj = sim.Projection(ON_pop,IC_pop,sim.AllToAllConnector(),synapse_type=sim.StaticSynapse(weight=on2ic_weight))
 
 #PL --> IC connectivity==================================================================
 # pl2ic_weight = RandomDistribution('uniform',(10.,12.))
 pl2ic_weight = RandomDistribution('uniform',(10.,15.))
-pl2ic_proj = sim.Projection(PL_pop,IC_pop,sim.OneToOneConnector(),synapse_type=sim.StaticSynapse(weight=pl2ic_weight,delay=1.0))
+# pl2ic_proj = sim.Projection(PL_pop,IC_pop,sim.OneToOneConnector(),synapse_type=sim.StaticSynapse(weight=pl2ic_weight,delay=1.0))
 
 #IC-->AC connectivity==================================================================
 tau_factor = 1./timestep
@@ -299,10 +303,10 @@ ON_pop.record('spikes')
 # #ON_pop_inh.record_v()
 # #ON_pop_inh.record_gsyn()
 #
-PL_pop.record('spikes')
+# PL_pop.record('spikes')
 # #PL_pop.record_v()
 VNTB_pop.record('spikes')
-IC_pop.record('spikes')
+# IC_pop.record('spikes')
 
 # AC_pop.record('spikes')
 # AC_pop_inh.record('spikes')
@@ -334,11 +338,11 @@ if num_repeats>1:
         # # ONinh_v = ON_pop_inh.get_v()
         # # ONinh_g = ON_pop_inh.get_gsyn()
         #
-        PL_data = PL_pop.get_data("spikes")
+        # PL_data = PL_pop.get_data("spikes")
         # # PL_v = PL_pop.get_v()
         #
         VNTB_data = VNTB_pop.get_data("spikes")
-        IC_data = IC_pop.get_data("spikes")
+        # IC_data = IC_pop.get_data("spikes")
 
         # AC_data = AC_pop.get_data("spikes")
         # ACinh_data = AC_pop_inh.get_data("spikes")
@@ -386,8 +390,8 @@ else:
 num_repeats+=1
 dir=results_directory#'../OME_SpiNN/yes_samples/'
 
-numpy.savez_compressed(results_directory+'/brainstem_asc_des_{}s_{}dB'.format(int(sim_duration/1000.),int(dBSPL)),
-                       ic_times=IC_data.segments[0].spiketrains,onset_times=onset_times)
+# numpy.savez_compressed(results_directory+'/brainstem_asc_des_{}s_{}dB'.format(int(sim_duration/1000.),int(dBSPL)),
+#                        ic_times=IC_data.segments[0].spiketrains,onset_times=onset_times)
 print "IC spikes saved"
 # numpy.save(dir+'/ic_spikes_asc.npy', IC_data.segments[0].spiketrains)
 # numpy.save('./ac_spikes.npy', AC_data.segments[0].spiketrains)
@@ -406,10 +410,10 @@ spike_raster_plot_8(ON_data.segments[0].spiketrains,plt=plt,duration=sim_duratio
 #spike_raster_plot(ONinh_spikes,plt=plt,duration=sim_duration/1000.,ylim=AN_pop_size/10,scale_factor=0.001,title='CN Onset inh')
 #cell_voltage_plot(ONinh_v,plt=plt,duration=sim_duration/1000.,id=76,title='CN Onset inhibitory cell id:')
 #cell_voltage_plot(ONinh_g,plt=plt,duration=sim_duration/1000.,id=76,title='CN Onset inhibitory cell id:')
-spike_raster_plot_8(PL_data.segments[0].spiketrains,plt=plt,duration=sim_duration/1000.,ylim=AN_pop_size+1,scale_factor=0.001,title='CN Primary-like',filepath=dir)
+# spike_raster_plot_8(PL_data.segments[0].spiketrains,plt=plt,duration=sim_duration/1000.,ylim=AN_pop_size+1,scale_factor=0.001,title='CN Primary-like',filepath=dir)
 #cell_voltage_plot(PL_v,plt=plt,duration=sim_duration/1000.,id=759,title='CN PL cell id:')
 #spike_raster_plot_8(VNTB_data.segments[0].spiketrains,plt=plt,duration=sim_duration/1000.,ylim=VNTB_pop_size+1,scale_factor=0.001,title='VNTB')
-spike_raster_plot_8(IC_data.segments[0].spiketrains,plt=plt,duration=sim_duration/1000.,ylim=AN_pop_size+1,scale_factor=0.001,title='IC',filepath=dir)
+# spike_raster_plot_8(IC_data.segments[0].spiketrains,plt=plt,duration=sim_duration/1000.,ylim=AN_pop_size+1,scale_factor=0.001,title='IC',filepath=dir)
 # spike_raster_plot_8(spike_times_spinn,plt=plt,duration=sim_duration/1000.,ylim=1001,scale_factor=0.001,title='IC')
 # spike_raster_plot_8(AC_data.segments[0].spiketrains,plt=plt,duration=sim_duration/1000.,ylim=AC_pop_size+1 ,scale_factor=0.001,title='AC')
 #spike_raster_plot_8(ACinh_data.segments[0].spiketrains,plt=plt,duration=sim_duration/1000.,ylim=AC_pop_size+1,scale_factor=0.001,title='AC inh')

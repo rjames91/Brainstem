@@ -35,11 +35,14 @@ d_stellate_params_cond = {#'cm': 0.25,  # nF
 
 dB = 50#20
 input_directory = '/home/rjames/Dropbox (The University of Manchester)/EarProject/Pattern_recognition/spike_trains/IC_spikes'
-cochlea_file = np.load(input_directory + '/spinnakear_13.5_1_kHz_75s_{}dB_10000fibres.npz'.format(dB))
+# cochlea_file = np.load(input_directory + '/spinnakear_13.5_1_kHz_75s_{}dB_5000fibres.npz'.format(dB))
 # cochlea_file = np.load(input_directory + '/spinnakear_13.5_1_kHz_aiu_60s_{}dB_1000fibres.npz'.format(dB))
 # cochlea_file = np.load(input_directory + '/spinnakear_13.5_1_kHz_20s_50dB_1000fibres.npz'.format(dB))
+cochlea_file = np.load(input_directory + '/spinnakear_matches_6s_20dB.npz')
 # an_spikes = [[100.,102,104]]
 an_spikes = cochlea_file['scaled_times']
+
+
 onset_times = cochlea_file['onset_times']
 
 #plt.hist(connection_weight.next(1000),bins=100)
@@ -56,7 +59,7 @@ n_d = int(n_total * 1./3 * 24./89)
 #================================================================================================
 # SpiNNaker setup
 #================================================================================================
-timestep = 1.0
+timestep = 0.1#1.0
 sim.setup(timestep=timestep)
 # sim.set_number_of_neurons_per_core(sim.IF_cond_exp,64)
 # sim.set_number_of_neurons_per_core(sim.SpikeSourceArray,128)
@@ -102,7 +105,7 @@ input_pops,d_pops,an_d_projs,m_pre = sub_pop_builder_inter(sim,n_d,sim.IF_cond_e
 #================================================================================================
 av_t_t = 0.1
 t_t_weight = RandomDistribution('normal_clipped',[av_t_t,0.1*av_t_t,0,av_t_t*2.])
-plt.hist(t_t_weight.next(1000),bins=100)
+# plt.hist(t_t_weight.next(1000),bins=100)
 t_t_list = normal_dist_connection_builder(n_t,n_t,RandomDistribution,conn_num=10.,dist=1.,sigma=2.,conn_weight=t_t_weight)
 # t_t_projection = sim.Projection(t_pop,t_pop,sim.FromListConnector(t_t_list),synapse_type=sim.StaticSynapse())
 
@@ -120,7 +123,10 @@ d_d_projections=sub_pop_projection_builder(d_pops,d_pops,d_d_list,sim,receptor_t
 d_t_list = normal_dist_connection_builder(n_d,n_t,RandomDistribution,conn_num=10.,dist=1.,sigma=1.,conn_weight=d_d_weight)
 d_d_projections=sub_pop_projection_builder(d_pops,t_pops,d_t_list,sim,receptor_type='inhibitory')
 
-duration = 500.#75000.
+#TODO: add a contralateral d_t and d_d projection
+
+
+duration = 75000.#500.#
 max_period = 6000.
 num_recordings =int((duration/max_period)+1)
 
@@ -138,9 +144,9 @@ sim.end()
 # t_spikes = t_data.segments[0].spiketrains
 # d_spikes = d_data.segments[0].spiketrains
 
-spike_raster_plot_8(t_spikes,plt,duration/1000.,n_t+1,0.001,title="t stellate pop activity")
-spike_raster_plot_8(d_spikes,plt,duration/1000.,n_d+1,0.001,title="d stellate pop activity")
-spike_raster_plot_8(input_spikes,plt,duration/1000.,number_of_inputs+1,0.001,title="input activity")
+# spike_raster_plot_8(t_spikes,plt,duration/1000.,n_t+1,0.001,title="t stellate pop activity")
+# spike_raster_plot_8(d_spikes,plt,duration/1000.,n_d+1,0.001,title="d stellate pop activity")
+# spike_raster_plot_8(input_spikes,plt,duration/1000.,number_of_inputs+1,0.001,title="input activity")
 
 if duration < 5000.:
     # mem_v = t_data.segments[0].filter(name='v')
@@ -150,7 +156,7 @@ if duration < 5000.:
 
     psth_plot_8(plt,numpy.arange(150,200),t_spikes,bin_width=timestep/1000.,duration=duration/1000.,title="PSTH_T")
 
-# np.savez_compressed(input_directory+'/octopus_13.5_1kHz_mod_{}dB_{}ms_timestep_{}s'.format(dB,timestep,int(duration/1000.)),an_spikes=an_spikes,
-#                     octopus_spikes=octopus_spikes,onset_times=onset_times)
+np.savez_compressed(input_directory+'/chopper_13.5_1kHz_{}dB_{}an_fibres_{}ms_timestep_{}s'.format(dB,number_of_inputs,timestep,int(duration/1000.)),an_spikes=an_spikes,
+                    t_spikes=t_spikes,d_spikes=d_spikes,onset_times=onset_times)
 
-plt.show()
+# plt.show()
