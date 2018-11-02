@@ -20,15 +20,15 @@ octopus_params_cond = {'cm': 5.,#57.,  # nF Only 200 cells in mouse CN
 
 dB = 50#20
 duration = 300.#75000.#20000.#
+n_fibres = 5000
 
 input_directory = '/home/rjames/Dropbox (The University of Manchester)/EarProject/Pattern_recognition/spike_trains/IC_spikes'
 # cochlea_file = np.load(input_directory + '/spinnakear_13.5_1_kHz_75s_{}dB_10000fibres.npz'.format(dB))
-cochlea_file = np.load(input_directory + '/spinnakear_13.5_1_kHz_75s_{}dB_5000fibres.npz'.format(dB))
+cochlea_file = np.load(input_directory + '/spinnakear_13.5_1_kHz_75s_{}dB_{}fibres.npz'.format(dB,n_fibres))
 # cochlea_file = np.load(input_directory + '/spinnakear_13.5_1_kHz_aiu_60s_{}dB_1000fibres.npz'.format(dB))
 # cochlea_file = np.load(input_directory + '/spinnakear_13.5_1_kHz_20s_50dB_1000fibres.npz'.format(dB))
 # an_spikes = [[100.,102,104]]
 an_spikes = cochlea_file['scaled_times']
-# input_spikes = cochlea_file['scaled_times']
 
 input_spikes =[]
 for neuron in an_spikes:
@@ -99,20 +99,26 @@ sim.setup(timestep=timestep)
 # Populations
 #================================================================================================
 # input_pop = sim.Population(number_of_inputs,sim.SpikeSourceArray(spike_times=input_spikes),label="an_pop_input")
-# oct_pop = sim.Population(target_pop_size,sim.IF_cond_exp,octopus_params_cond,label="fixed_weight_scale_cond")
-# oct_pop.record(["spikes","v"])
+# oct_pop = sim.Population(target_pop_size,sim.IF_cond_exp,octopus_params_cond)#,label="fixed_weight_scale_cond")
+# # oct_pop.record(["spikes","v"])
 # oct_pop.record(["spikes"])
 
 #================================================================================================
 # Projections
 #================================================================================================
-connection_weight = RandomDistribution('normal_clipped',[av_weight,av_weight/10.,0,av_weight*2.])
-an_on_list = normal_dist_connection_builder(number_of_inputs,target_pop_size,RandomDistribution,conn_num=n_connections,dist=1.,sigma=number_of_inputs/20.
-                                            ,conn_weight=connection_weight)
+# connection_weight = RandomDistribution('normal_clipped',[av_weight,av_weight/10.,0,av_weight*2.])
+# an_on_list = normal_dist_connection_builder(number_of_inputs,target_pop_size,RandomDistribution,conn_num=n_connections,dist=1.,sigma=number_of_inputs/20.
+#                                             ,conn_weight=connection_weight)
+# np.savez_compressed('./an_on_list{}'.format(n_fibres),an_on_list=an_on_list)
+an_on_list_file = np.load('./an_on_list{}.npz'.format(n_fibres))
+an_on_list = an_on_list_file['an_on_list']
 
 # input_projection = sim.Projection(input_pop,oct_pop,sim.FromListConnector(an_on_list),synapse_type=sim.StaticSynapse())
 
-input_pops,target_pops,an_on_projs,m_pre = sub_pop_builder_inter(sim,target_pop_size,sim.IF_cond_exp,octopus_params_cond,"SSA",input_spikes,
+# input_pops,target_pops,an_on_projs,m_pre = sub_pop_builder_inter(sim,target_pop_size,sim.IF_cond_exp,octopus_params_cond,"SSA",input_spikes,
+#                                                             "an_input","octopus",an_on_list)
+
+input_pops,target_pops,an_on_projs,m_pre,posts_from_pop_index_dict = sub_pop_builder_auto(sim,target_pop_size,sim.IF_cond_exp,octopus_params_cond,"SSA",input_spikes,
                                                             "an_input","octopus",an_on_list)
 
 max_period = 5000.
@@ -124,7 +130,8 @@ for i in range(num_recordings):
 
 # octopus_data = oct_pop.get_data(["spikes","v"])
 # octopus_data = oct_pop.get_data(["spikes"])
-octopus_spikes = get_sub_pop_spikes(target_pops)
+octopus_spikes = get_sub_pop_spikes(target_pops,posts_from_pop_index_dict)
+# octopus_spikes = get_sub_pop_spikes(target_pops)
 
 sim.end()
 

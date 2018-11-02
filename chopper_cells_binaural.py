@@ -35,28 +35,26 @@ d_stellate_params_cond = {#'cm': 0.25,  # nF
 
 dB = 30
 input_directory = '/home/rjames/Dropbox (The University of Manchester)/EarProject/Pattern_recognition/spike_trains/IC_spikes'
-test_file = 'matches_6s_{}dB.npz'.format(dB)
+# test_file = 'matches_6s_{}dB.npz'.format(dB)
 # test_file = 'stereo_1k_1s_{}dB.npz'.format(dB)
+# test_file = 'yes_1s_{}dB.npz'.format(dB)
+test_file = 'yes_1s_{}dB_widerfilters.npz'.format(dB)
 cochlea_file = np.load(input_directory + '/spinnakear_' + test_file)
 an_input = cochlea_file['scaled_times']
 
 max_time = 0.
 if an_input.shape[0]>1:
     n_ears =2
-    for ear in an_input:
-        for fibre in ear:
-            for time in fibre:
-                if time > max_time:
-                    max_time = time
-
 else:
     n_ears = 1
-    for fibre in an_input:
+for ear in an_input:
+    for fibre in ear:
         for time in fibre:
             if time > max_time:
                 max_time = time
 
 duration = max_time
+# duration = 150.
 
 input_pops = [[] for _ in range(n_ears)]
 t_pops = [[] for _ in range(n_ears)]
@@ -78,8 +76,6 @@ onset_times = cochlea_file['onset_times']
 #================================================================================================
 timestep = 1.0#0.1#
 sim.setup(timestep=timestep)
-# sim.set_number_of_neurons_per_core(sim.IF_cond_exp,64)
-# sim.set_number_of_neurons_per_core(sim.SpikeSourceArray,128)
 
 for ear_index,an_spikes in enumerate(an_input):
     number_of_inputs = len(an_spikes)
@@ -122,7 +118,7 @@ for ear_index,an_spikes in enumerate(an_input):
 # Lateral CN Projections
 #================================================================================================
 for ear_index in range(n_ears):
-    av_t_t = 0.1
+    av_t_t = w2s_t#0.5#0.1#
     t_t_weight = RandomDistribution('normal_clipped',[av_t_t,0.1*av_t_t,0,av_t_t*2.])
     # plt.hist(t_t_weight.next(1000),bins=100)
     t_t_list = normal_dist_connection_builder(n_t,n_t,RandomDistribution,conn_num=10.,dist=1.,sigma=2.,conn_weight=t_t_weight)
@@ -133,7 +129,7 @@ for ear_index in range(n_ears):
     t_d_list = normal_dist_connection_builder(n_t,n_d,RandomDistribution,conn_num=10.,dist=1.,sigma=2.,conn_weight=t_t_weight)
     t_d_projs[ear_index]=sub_pop_projection_builder(t_pops[ear_index],d_pops[ear_index],t_d_list,sim)
 
-    av_d_d = 0.1
+    av_d_d = w2s_t#0.5#0.1#
     d_d_weight = RandomDistribution('normal_clipped',[av_d_d,0.1*av_d_d,0,av_d_d*2.])
     d_d_list = normal_dist_connection_builder(n_d,n_d,RandomDistribution,conn_num=10.,dist=1.,sigma=1.,conn_weight=d_d_weight)
     d_d_projs[ear_index]=sub_pop_projection_builder(d_pops[ear_index],d_pops[ear_index],d_d_list,sim,receptor_type='inhibitory')
@@ -149,6 +145,7 @@ for ear_index in range(n_ears):
     d_dc_list = normal_dist_connection_builder(n_d,n_d,RandomDistribution,conn_num=10.,dist=1.,sigma=20.,conn_weight=d_d_weight)
     d_dc_projs[ear_index]=sub_pop_projection_builder(d_pops[ear_index],d_pops[contra_ear_index],d_dc_list,sim,receptor_type='inhibitory')
 
+
 max_period = 6000.
 num_recordings =int((duration/max_period)+1)
 
@@ -159,20 +156,27 @@ for ear_index in range(n_ears):
     t_spikes = get_sub_pop_spikes(t_pops[ear_index])
     d_spikes = get_sub_pop_spikes(d_pops[ear_index])
 
+    if duration < 6000.:
+        psth_plot_8(plt, numpy.arange(175, 225), t_spikes, bin_width=timestep / 1000., duration=duration / 1000.,
+                    title="PSTH_T ear{}".format(ear_index))
+
+        # for pop in t_pops[ear_index]:
+        #     data = pop.get_data(["v"])
+        #     mem_v = data.segments[0].filter(name='v')
+        #     cell_voltage_plot_8(mem_v, plt, duration/timestep, [],scale_factor=timestep/1000.,
+        #                         title='t stellate pop ear{}'.format(ear_index),id=range(pop.size))
+        # for pop in d_pops[ear_index]:
+        #     data = pop.get_data(["v"])
+        #     mem_v = data.segments[0].filter(name='v')
+        #     cell_voltage_plot_8(mem_v, plt, duration/timestep, [],scale_factor=timestep/1000.,
+        #                         title='d stellate pop ear{}'.format(ear_index),id=range(pop.size))
+
+
     spike_raster_plot_8(t_spikes,plt,duration/1000.,n_t+1,0.001,title="t stellate pop activity ear{}".format(ear_index))
     spike_raster_plot_8(d_spikes,plt,duration/1000.,n_d+1,0.001,title="d stellate pop activity ear{}".format(ear_index))
-# spike_raster_plot_8(input_spikes,plt,duration/1000.,number_of_inputs+1,0.001,title="input activity")
 sim.end()
 
-if duration < 6000.:
-    # mem_v = t_data.segments[0].filter(name='v')
-    # cell_voltage_plot_8(mem_v, plt, duration/timestep, [],scale_factor=timestep/1000.,title='t stellate pop')
-    # mem_v = d_data.segments[0].filter(name='v')
-    # cell_voltage_plot_8(mem_v, plt, duration/timestep, [],scale_factor=timestep/1000.,title='d stellate pop')
-
-    psth_plot_8(plt,numpy.arange(150,200),t_spikes,bin_width=timestep/1000.,duration=duration/1000.,title="PSTH_T")
-
 np.savez_compressed(input_directory+'/chopper_' + test_file + '_{}an_fibres_{}ms_timestep_{}s'.format
-                    (dB,number_of_inputs,timestep,int(duration/1000.)),an_spikes=an_spikes,
+                    (number_of_inputs,timestep,int(duration/1000.)),an_spikes=an_spikes,
                     t_spikes=t_spikes,d_spikes=d_spikes,onset_times=onset_times)
 plt.show()
