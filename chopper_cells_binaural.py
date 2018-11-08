@@ -33,14 +33,18 @@ d_stellate_params_cond = {#'cm': 0.25,  # nF
                'v_thresh': -39.5
                }
 
-dB = 30
+dB = 50
+n_fibres = 5000
 input_directory = '/home/rjames/Dropbox (The University of Manchester)/EarProject/Pattern_recognition/spike_trains/IC_spikes'
 # test_file = 'matches_6s_{}dB.npz'.format(dB)
 # test_file = 'stereo_1k_1s_{}dB.npz'.format(dB)
 # test_file = 'yes_1s_{}dB.npz'.format(dB)
-test_file = 'yes_1s_{}dB_widerfilters.npz'.format(dB)
+# test_file = 'yes_1s_{}dB_widerfilters.npz'.format(dB)
+test_file = '13.5_1_kHz_75s_{}dB_{}fibres.npz'.format(dB,n_fibres)
+
 cochlea_file = np.load(input_directory + '/spinnakear_' + test_file)
-an_input = cochlea_file['scaled_times']
+# an_input = cochlea_file['scaled_times']
+an_input = np.asarray([cochlea_file['scaled_times']])
 
 max_time = 0.
 if an_input.shape[0]>1:
@@ -54,7 +58,7 @@ for ear in an_input:
                 max_time = time
 
 duration = max_time
-# duration = 150.
+duration = 300.
 
 input_pops = [[] for _ in range(n_ears)]
 t_pops = [[] for _ in range(n_ears)]

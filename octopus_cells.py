@@ -93,15 +93,15 @@ timestep = 1.#0.1
 sim.setup(timestep=timestep)
 # sim.set_number_of_neurons_per_core(sim.IF_cond_exp,16)
 # sim.set_number_of_neurons_per_core(sim.IF_cond_exp,32)
-# sim.set_number_of_neurons_per_core(sim.SpikeSourceArray,128)
+sim.set_number_of_neurons_per_core(sim.SpikeSourceArray,255)
 
 #================================================================================================
 # Populations
 #================================================================================================
-# input_pop = sim.Population(number_of_inputs,sim.SpikeSourceArray(spike_times=input_spikes),label="an_pop_input")
-# oct_pop = sim.Population(target_pop_size,sim.IF_cond_exp,octopus_params_cond)#,label="fixed_weight_scale_cond")
-# # oct_pop.record(["spikes","v"])
-# oct_pop.record(["spikes"])
+input_pop = sim.Population(number_of_inputs,sim.SpikeSourceArray(spike_times=input_spikes),label="an_pop_input")
+oct_pop = sim.Population(target_pop_size,sim.IF_cond_exp,octopus_params_cond)#,label="fixed_weight_scale_cond")
+# oct_pop.record(["spikes","v"])
+oct_pop.record(["spikes"])
 
 #================================================================================================
 # Projections
@@ -129,13 +129,13 @@ for i in range(num_recordings):
     sim.run(duration/num_recordings)
 
 # octopus_data = oct_pop.get_data(["spikes","v"])
-# octopus_data = oct_pop.get_data(["spikes"])
-octopus_spikes = get_sub_pop_spikes(target_pops,posts_from_pop_index_dict)
+octopus_data = oct_pop.get_data(["spikes"])
+# octopus_spikes = get_sub_pop_spikes(target_pops,posts_from_pop_index_dict)
 # octopus_spikes = get_sub_pop_spikes(target_pops)
 
 sim.end()
 
-# octopus_spikes = octopus_data.segments[0].spiketrains
+octopus_spikes = octopus_data.segments[0].spiketrains
 
 spike_raster_plot_8(octopus_spikes,plt,duration/1000.,target_pop_size+1,0.001,title="octopus pop activity")
 spike_raster_plot_8(input_spikes,plt,duration/1000.,number_of_inputs+1,0.001,title="input activity")
