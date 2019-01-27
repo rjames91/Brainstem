@@ -8,7 +8,6 @@ import subprocess
 import time as local_time
 from spinnakear import SpiNNakEar
 from pacman.model.constraints.partitioner_constraints.max_vertex_atoms_constraint import MaxVertexAtomsConstraint
-from elephant.statistics import isi,cv
 
 #================================================================================================
 # Simulation parameters
@@ -115,88 +114,19 @@ conn_pre_gen = True
 lateral = True
 
 Fs = 100000.#22050.#
-dBSPL=60
-wav_directory = '/home/rjames/SpiNNaker_devel/OME_SpiNN/'
+dB=60
+n_fibres = 3000
+
 input_directory = '/home/rjames/Dropbox (The University of Manchester)/EarProject/Pattern_recognition/spike_trains/IC_spikes'
 
-tone_1 = generate_signal(freq=1000,dBSPL=dBSPL,duration=0.05,
-                       modulation_freq=0.,fs=Fs,ramp_duration=0.005,plt=None,silence=True,silence_duration=0.075)
-tone_1_r = generate_signal(freq=1000,dBSPL=0.,duration=0.05,
-                       modulation_freq=0.,fs=Fs,ramp_duration=0.005,plt=None,silence=True,silence_duration=0.075)
-tone_1_stereo = np.asarray([tone_1,tone_1_r])
+test_file = 'tone_1_20s'
 
-timit_l = generate_signal(signal_type='file',dBSPL=dBSPL,fs=Fs,ramp_duration=0.0025,silence=True,
-                            file_name=wav_directory+'10788.wav',plt=None,channel=0)
-timit_r = generate_signal(signal_type='file',dBSPL=dBSPL/2,fs=Fs,ramp_duration=0.0025,silence=True,
-                            file_name=wav_directory+'10788.wav',plt=None,channel=1)
-timit = numpy.asarray([timit_l,timit_r])
+cochlea_file = np.load(input_directory + '/spinnakear_' + test_file + '_{}dB_{}fibres.npz'.format(dB,n_fibres))
+an_input = cochlea_file['scaled_times']
+timestep = 1.#0.1#
 
-sounds_dict = {
-                "tone_1":tone_1,
-                "tone_1_stereo":tone_1_stereo,
-                "timit":timit
-}
-n_fibres = 1000
-timestep = 1.0#0.1#
-required_total_time = 20.
-
-stimulus_list = ['tone_1_stereo']
-duration_dict = {}
-test_file = ''
-for stim_string in stimulus_list:
-    test_file += stim_string + '_'
-test_file += str(int(required_total_time))+'s'
-
-# check if any stimuli are in stereo
-num_channels=1
-for sound_string in stimulus_list:
-    sound = sounds_dict[sound_string]
-    duration_dict[sound_string]= (len(sound)/Fs)*1000.#ms
-    if len(sound.shape)>1:
-        num_channels=2
-audio_data = [[] for _ in range(num_channels)]
-
-onset_times = [[[]for _ in range(num_channels)]for _ in range(len(stimulus_list))]
-
-chosen_stimulus_list=[]
-while 1:
-    rand_choice = numpy.random.randint(len(stimulus_list))
-    chosen_string = stimulus_list[rand_choice]
-    if chosen_string not in chosen_stimulus_list:
-        chosen_stimulus_list.append(chosen_string)
-    chosen_samples = sounds_dict[chosen_string]
-    if len(chosen_samples.shape) > 1:#stereo
-        for i,channel in enumerate(chosen_samples):
-            onset_found = False
-            for sample in channel:
-                if not onset_found and abs(sample) >  4e-6:
-                    #onset time, duration tuple (both in ms)
-                    onset_times[rand_choice][i].append(numpy.round(1000. * (len(audio_data[i]) / Fs)))
-                    onset_found = True
-                audio_data[i].append(sample)
-
-    else:
-        onset_found = False
-        for sample in chosen_samples:
-            if not onset_found and abs(sample) > 4e-6:
-                onset_times[rand_choice][0].append(numpy.round(1000.*(len(audio_data[0])/Fs)))
-                onset_found = True
-            audio_data[0].append(sample)
-            #add zero input to other ear
-        if num_channels > 1:
-            silence_amp = 1. * 28e-6 * 10. ** (-20. / 20.) # -20dBSPL silence noise
-            silence_samples = numpy.random.rand(chosen_samples.size) * silence_amp
-            for sample in silence_samples:
-                audio_data[1].append(sample)
-
-    if len(audio_data[0]) / Fs > required_total_time:
-        break
-
-max_time = 1000. * (len(audio_data[0]) / Fs)
-
-duration = max_time
-# duration = 1000.
-n_ears = num_channels
+duration = 500.##20000.
+n_ears = 1
 
 input_pops = [[] for _ in range(n_ears)]
 t_pops = [[] for _ in range(n_ears)]
@@ -229,8 +159,8 @@ moc_spikes = [[] for _ in range(n_ears)]
 
 
 if conn_pre_gen:
-    connection_dicts_file = np.load(input_directory+'/cn_{}an_fibres_connectivity.npz'.format
-                    (n_fibres))
+    connection_dicts_file = np.load(input_directory+'/cn_' + test_file + '_{}an_fibres_{}ms_timestep_connectivity.npz'.format
+                    (n_fibres,timestep))
     connection_dicts = connection_dicts_file['connection_dicts']
 else:
     connection_dicts = [{} for _ in range(n_ears)]
@@ -243,8 +173,9 @@ sim.setup(timestep=timestep)
 sim.set_number_of_neurons_per_core(sim.IF_cond_exp,255)
 sim.set_number_of_neurons_per_core(sim.extra_models.Izhikevich_cond,255)
 
-for ear_index in range(n_ears):
-    number_of_inputs = n_fibres
+for ear_index,an_spikes in enumerate(an_input):
+    number_of_inputs = len(an_spikes)
+    input_spikes = an_spikes
 
     n_total = int(6.66 * number_of_inputs)
     # n_total = 2. * number_of_inputs
@@ -259,11 +190,12 @@ for ear_index in range(n_ears):
     # Build Populations
     #================================================================================================
     pop_size = max([number_of_inputs,n_d,n_t,n_b,n_o,n_moc])
-    if pop_size != number_of_inputs: # need to scale
-        an_spatial=False
+    if pop_size != number_of_inputs:
+        an_spatial = False
     else:
         an_spatial = True
-    input_pops[ear_index]=sim.Population(number_of_inputs,SpiNNakEar(audio_input=audio_data[ear_index],fs=Fs,n_channels=number_of_inputs/10),label="AN_Pop_ear{}".format(ear_index))
+    input_pops[ear_index] = sim.Population(number_of_inputs, sim.SpikeSourceArray(spike_times=input_spikes),
+                                           label="AN_Pop_ear{}".format(ear_index))
     d_pops[ear_index]=sim.Population(pop_size,sim.extra_models.Izhikevich_cond,d_stellate_izk_class_1_params,label="d_stellate_fixed_weight_scale_cond{}".format(ear_index))
     # d_pops[ear_index]=sim.Population(pop_size,sim.IF_cond_exp,d_stellate_params_cond,label="d_stellate_fixed_weight_scale_cond".format(ear_index))
     # d_pops[ear_index]=sim.Population(pop_size,sim.IF_cond_exp,d_stellate_params_cond,label="d_stellate".format(ear_index))
@@ -281,7 +213,7 @@ for ear_index in range(n_ears):
     o_pops[ear_index].record(["spikes"])
     # moc_pops[ear_index] = sim.Population(pop_size, sim.extra_models.Izhikevich_cond, IZH_EX_SUBCOR, label="moc_fixed_weight_scale_cond{}".format(ear_index))
     moc_pops[ear_index] = sim.Population(n_moc, sim.extra_models.Izhikevich_cond, IZH_EX_SUBCOR, label="moc_fixed_weight_scale_cond{}".format(ear_index))
-    moc_pops[ear_index].set_constraint(MaxVertexAtomsConstraint(1))
+    # moc_pops[ear_index].set_constraint(MaxVertexAtomsConstraint(1))
     moc_pops[ear_index].record(["spikes"])
 
     #================================================================================================
@@ -468,32 +400,32 @@ if lateral is True:
             t_mocc_projs[ear_index] = sim.Projection(t_pops[ear_index], moc_pops[contra_ear_index],
                                                      sim.FromListConnector(t_mocc_list),
                                                      synapse_type=sim.StaticSynapse())
-            #ipsilateral moc
-            n_moc_an_connections = RandomDistribution('uniform', [5, 10])
-            moc_an_weight = 1.
-            if conn_pre_gen:
-                moc_an_list = connection_dicts[ear_index]['moc_an_list']
-            else:
-                moc_an_list = normal_dist_connection_builder(n_moc, number_of_inputs/10, RandomDistribution,
-                                                                     conn_num=n_moc_an_connections, dist=1.,
-                                                                     sigma=1., conn_weight=moc_an_weight)
-
-                connection_dicts[ear_index]['moc_an_list'] = moc_an_list
-
-            moc_an_projs[ear_index] = sim.Projection(moc_pops[ear_index], input_pops[ear_index],
-                                                     sim.FromListConnector(moc_an_list),
-                                                     synapse_type=sim.StaticSynapse())
-            #contralateral moc
-            if conn_pre_gen:
-                moc_anc_list = connection_dicts[ear_index]['moc_anc_list']
-            else:
-                moc_anc_list = normal_dist_connection_builder(n_moc, number_of_inputs/10, RandomDistribution,
-                                                                     conn_num=n_moc_an_connections, dist=1.,
-                                                                     sigma=number_of_inputs / 100., conn_weight=moc_an_weight)
-                connection_dicts[ear_index]['moc_anc_list'] = moc_an_list
-            moc_anc_projs[ear_index] = sim.Projection(moc_pops[ear_index], input_pops[contra_ear_index],
-                                                     sim.FromListConnector(moc_anc_list),
-                                                     synapse_type=sim.StaticSynapse())
+            # #ipsilateral moc
+            # n_moc_an_connections = RandomDistribution('uniform', [5, 10])
+            # moc_an_weight = 1.
+            # if conn_pre_gen:
+            #     moc_an_list = connection_dicts[ear_index]['moc_an_list']
+            # else:
+            #     moc_an_list = normal_dist_connection_builder(n_moc, number_of_inputs/10, RandomDistribution,
+            #                                                          conn_num=n_moc_an_connections, dist=1.,
+            #                                                          sigma=1., conn_weight=moc_an_weight)
+            #
+            #     connection_dicts[ear_index]['moc_an_list'] = moc_an_list
+            #
+            # moc_an_projs[ear_index] = sim.Projection(moc_pops[ear_index], input_pops[ear_index],
+            #                                          sim.FromListConnector(moc_an_list),
+            #                                          synapse_type=sim.StaticSynapse())
+            # #contralateral moc
+            # if conn_pre_gen:
+            #     moc_anc_list = connection_dicts[ear_index]['moc_anc_list']
+            # else:
+            #     moc_anc_list = normal_dist_connection_builder(n_moc, number_of_inputs/10, RandomDistribution,
+            #                                                          conn_num=n_moc_an_connections, dist=1.,
+            #                                                          sigma=number_of_inputs / 100., conn_weight=moc_an_weight)
+            #     connection_dicts[ear_index]['moc_anc_list'] = moc_an_list
+            # moc_anc_projs[ear_index] = sim.Projection(moc_pops[ear_index], input_pops[contra_ear_index],
+            #                                          sim.FromListConnector(moc_anc_list),
+            #                                          synapse_type=sim.StaticSynapse())
 
         if conn_pre_gen is False:
             connection_dicts[ear_index]['t_t_list'] = t_t_list
@@ -504,11 +436,11 @@ if lateral is True:
             connection_dicts[ear_index]['d_b_list'] = d_b_list
 
 if conn_pre_gen is False:
-    np.savez_compressed(input_directory+'/cn_{}an_fibres_connectivity'.format
-                    (number_of_inputs),connection_dicts=connection_dicts)
+    np.savez_compressed(input_directory+'/cn_' + test_file + '_{}an_fibres_{}ms_timestep_connectivity'.format
+                    (number_of_inputs,timestep),connection_dicts=connection_dicts)
 
 max_period = 6000.
-num_recordings =1#int((duration/max_period)+1)
+num_recordings =int((duration/max_period)+1)
 
 for i in range(num_recordings):
     sim.run(duration/num_recordings)
@@ -557,12 +489,6 @@ for ear_index in range(n_ears):
                             title=neuron_title_list[i], markersize=1, subplots=(len(neuron_list), 1, i + 1)
                             )  # ,filepath=results_directory)
 
-    # spike_trains = [spikes for spikes in t_spikes[ear_index] if len(spikes>0)]
-    # half_point = len(spike_trains)/2
-    # t_isi = [isi(spike_train) for spike_train in spike_trains[half_point]]
-    # isi_test = [isi.item() for isi in t_isi]
-    # plt.figure("ISI ear {}".format(ear_index))
-    # plt.hist(isi_test,bins=100)
     # spike_raster_plot_8(plot_t_spikes,plt,duration/1000.,pop_size+1,0.001,title="t stellate pop activity ear{}".format(ear_index))
     # spike_raster_plot_8(plot_d_spikes,plt,duration/1000.,pop_size+1,0.001,title="d stellate pop activity ear{}".format(ear_index))
     # spike_raster_plot_8(plot_b_spikes,plt,duration/1000.,pop_size+1,0.001,title="bushy pop activity ear{}".format(ear_index))
@@ -572,9 +498,8 @@ for ear_index in range(n_ears):
 sim.end()
 print "simulation of {}s complete in {}s".format(duration/1000.,local_time.time()-time_start)
 
-np.savez_compressed(input_directory+'/cn_' + test_file + '_{}an_fibres_{}ms_timestep_{}dB_{}s'.format
-                     (number_of_inputs,timestep,dBSPL,int(duration/1000.)),an_spikes=[],
-                     t_spikes=t_spikes,d_spikes=d_spikes,b_spikes=b_spikes,o_spikes=o_spikes,onset_times=onset_times)
-
+np.savez_compressed(input_directory+'/cn_' + test_file + '_{}an_fibres_{}ms_timestep_filtered_edges'.format
+                     (number_of_inputs,timestep),an_spikes=[],
+                     t_spikes=t_spikes,d_spikes=d_spikes,b_spikes=b_spikes,o_spikes=o_spikes)
 
 plt.show()
