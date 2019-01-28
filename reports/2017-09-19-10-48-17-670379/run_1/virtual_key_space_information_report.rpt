@@ -1,0 +1,7 @@
+Vertex: AN pop:0:1239
+    Partition: SPIKE, Routing Info: [KeyAndMask:0x0L:0xfffff800]
+Vertex: D_stellate_pop:0:254
+Vertex: D_stellate_pop:255:509
+Vertex: D_stellate_pop:510:764
+Vertex: D_stellate_pop:765:1019
+Vertex: D_stellate_pop:1020:1140

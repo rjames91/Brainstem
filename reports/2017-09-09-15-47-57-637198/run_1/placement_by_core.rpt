@@ -1,0 +1,63 @@
+        Placement Information by Core
+        =============================
+
+Generated: Sat Sep  9 15:48:12 2017 for target machine '10.2.225.97'
+
+**** Chip: (0, 0)
+Application cores: 18
+  Processor 2: Vertex: 'CN_pop', pop size: 1240
+              Slice on this core: 600:699 (100 atoms)
+              Model: IFCurrExpBase
+
+  Processor 3: Vertex: 'CN_pop', pop size: 1240
+              Slice on this core: 800:899 (100 atoms)
+              Model: IFCurrExpBase
+
+  Processor 4: Vertex: 'CN_pop', pop size: 1240
+              Slice on this core: 700:799 (100 atoms)
+              Model: IFCurrExpBase
+
+  Processor 5: Vertex: 'CN_pop', pop size: 1240
+              Slice on this core: 1200:1239 (40 atoms)
+              Model: IFCurrExpBase
+
+  Processor 6: Vertex: 'AN pop', pop size: 1240
+              Slice on this core: 0:1239 (1240 atoms)
+              Model: SpikeSourceArray
+
+  Processor 7: Vertex: 'CN_pop', pop size: 1240
+              Slice on this core: 200:299 (100 atoms)
+              Model: IFCurrExpBase
+
+  Processor 8: Vertex: 'CN_pop', pop size: 1240
+              Slice on this core: 900:999 (100 atoms)
+              Model: IFCurrExpBase
+
+  Processor 9: Vertex: 'CN_pop', pop size: 1240
+              Slice on this core: 300:399 (100 atoms)
+              Model: IFCurrExpBase
+
+  Processor 10: Vertex: 'CN_pop', pop size: 1240
+              Slice on this core: 100:199 (100 atoms)
+              Model: IFCurrExpBase
+
+  Processor 11: Vertex: 'CN_pop', pop size: 1240
+              Slice on this core: 1000:1099 (100 atoms)
+              Model: IFCurrExpBase
+
+  Processor 12: Vertex: 'CN_pop', pop size: 1240
+              Slice on this core: 0:99 (100 atoms)
+              Model: IFCurrExpBase
+
+  Processor 13: Vertex: 'CN_pop', pop size: 1240
+              Slice on this core: 400:499 (100 atoms)
+              Model: IFCurrExpBase
+
+  Processor 14: Vertex: 'CN_pop', pop size: 1240
+              Slice on this core: 1100:1199 (100 atoms)
+              Model: IFCurrExpBase
+
+  Processor 15: Vertex: 'CN_pop', pop size: 1240
+              Slice on this core: 500:599 (100 atoms)
+              Model: IFCurrExpBase
+

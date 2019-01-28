@@ -1,0 +1,17 @@
+        Placement Information by Vertex
+        ===============================
+
+Generated: Sat Sep  9 17:07:49 2017 for target machine '10.2.225.97'
+
+**** Vertex: 'AN pop'
+Model: SpikeSourceArray
+Pop size: 20
+Machine Vertices: 
+  Slice 0:19 (20 atoms) 
+
+**** Vertex: 'CN_pop'
+Model: IFCurrExpBase
+Pop size: 20
+Machine Vertices: 
+  Slice 0:19 (20 atoms) 
+

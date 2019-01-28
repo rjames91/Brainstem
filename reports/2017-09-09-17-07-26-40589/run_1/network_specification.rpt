@@ -1,0 +1,11 @@
+*** Vertices:
+Vertex AN pop, size: 20, model: SpikeSourceArray
+    Constraints:
+        MaxVertexAtomsConstraint(size=9223372036854775807)
+    Outgoing Edge Partitions:
+
+Vertex CN_pop, size: 20, model: IFCurrExpBase
+    Constraints:
+        MaxVertexAtomsConstraint(size=100)
+    Outgoing Edge Partitions:
+

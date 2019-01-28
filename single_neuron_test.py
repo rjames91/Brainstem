@@ -90,10 +90,10 @@ on_params = {#'cm': 0.25,  # nF
                'v_thresh': -39.5
                }
 
-octopus_params_cond = {'cm': 5.,#57.,  # nF Only 200 cells in mouse CN
+octopus_params_cond = {'cm': 1.,#57.,  # nF
                'tau_m': 0.5,#10.0,#2.,#3.,#
                'tau_syn_E': 0.35,#2.5,#
-               'e_rev_E': -20.,#-10.,#-35.,#-55.1,#
+               'e_rev_E': -55.,#-20.,#-10.,#-35.,#-55.1,#
                'v_reset': -60.6,#-70.0,
                'v_rest': -60.6,
                'v_thresh': -56.
@@ -129,23 +129,103 @@ one_to_one_cond_params = {
                 'v_thresh': -64.
 }
 
+t_stellate_izk_class_2_params = {
+               'a':0.2,
+               'b':0.26,
+               'c':-65,
+               'd':0,
+               'u':-15,
+               'tau_syn_E': 0.94,#3.0,#2.5,#
+               #'e_rev_E': -54.,#-55.1,#
+               'tau_syn_I': 4.0,#2.5,#
+               'v': -63.0,
+}
+
+izk_class_1_params = {
+               'a':0.03,
+               'b':-2,
+               'c':-50,
+               'd':80,
+               'u':0,
+               'tau_syn_E': 0.94,#3.0,#2.5,#
+               #'e_rev_E': -54.,#-55.1,#
+               'tau_syn_I': 4.0,#2.5,#
+               'v': -70.0,
+}
+
+d_stellate_izk_class_2_params = {
+               'a':0.2,
+               'b':0.26,
+               'c':-65,
+               'd':0,
+               'u':-15,
+               'tau_syn_E':4.88,
+               'e_rev_E': -30.,
+               'tau_syn_I':4.,
+               'v': -63.0,
+}
+
+d_stellate_izk_class_1_params = {
+               'a':0.02,
+               'b':-0.1,
+               'c':-55,
+               'd':6,
+               'u':10,
+               'tau_syn_E':4.88,
+               'e_rev_E': -30.,
+               'tau_syn_I':4.,
+               'v': -63.0,
+}
+
+IZH_EX_SUBCOR = {'a': 0.02,
+                   'b': -0.1,
+                   'c': -55,
+                   'd': 6,
+                   'v': -75,
+                   'u': 10.,#0.,
+                   }
+
+octopus_params_cond_izh = {
+               # 'a':0.02,
+               # 'b':-0.1,
+               # 'c':-55,
+               # 'd':6,
+               # 'u':10,
+                'a':0.02,
+                'b':0.25,
+                'c':-65,
+                'd':4,
+                'u':-15,
+               'tau_syn_E': 0.2,#0.35,#2.5,#
+               'e_rev_E': -55.,#-25.,#-10.,#-35.,#-55.1,#
+               'v': -70.,
+               }
+
 dB = 50#20
 input_directory = '/home/rjames/Dropbox (The University of Manchester)/EarProject/Pattern_recognition/spike_trains/IC_spikes'
 # cochlea_file = np.load(input_directory + '/spinnakear_1kHz_60s_{}dB.npz'.format(dB))
 cochlea_file = np.load(input_directory + '/spinnakear_13.5_1_kHz_75s_{}dB_1000fibres.npz'.format(dB))
 # an_spikes = [[i*7.+ 3.*(np.random.rand()-0.5) for i in range(50)]for _ in range(100)]#[[10.,11.,12.,13.]]#cochlea_file['scaled_times']
-an_spikes = [[10.]]#,102,104]]
+# an_spikes = [[10.,15.,20.,100.,105.]]#,102,104]]
+# spike_times = [10.,15.,20.,100.,105.]
+spike_times = [50.,105.]
+an_spikes = []#,102,104]]
+
+n_inputs = 50
+spike_jitter = 1.
+for i in range(n_inputs):
+    an_spikes.append([i+spike_jitter*(np.random.rand()-0.5) for i in spike_times])
 
 # an_spikes = []
 # for _ in range(60):
 #     an_spikes.append([10. + (5. * (np.random.rand()-0.5))])
 # an_spikes = cochlea_file['scaled_times']
 target_pop_size =1
-w2s_target = 2.#7.#0.7#1.#15.#0.005#0.0015#0.0006#1.5#4.5#0.12#2.5#5.
-# n_connections = 120.#50#100
+w2s_target = 3.#0.3#1.#0.7#1.#15.#0.005#0.0015#0.0006#1.5#4.5#0.12#2.5#5.
+# n_connection = 120.#50#100
 n_connections = RandomDistribution('uniform',[30.,120.])
 # connection_weight = w2s_target/n_connections#w2s_target#initial_weight*2.#/2.
-av_weight =w2s_target#/30.#w2s_target/90.# w2s_target/n_connections#
+av_weight =w2s_target/n_inputs#/30.#w2s_target/90.# w2s_target/n_connections#
 
 #plt.hist(connection_weight.next(1000),bins=100)
 #plt.show()
@@ -166,8 +246,8 @@ n_repeats = 20
 #================================================================================================
 # SpiNNaker setup
 #================================================================================================
-sim.setup(timestep=1.)
-sim.set_number_of_neurons_per_core(sim.IF_cond_exp,64)
+sim.setup(timestep=0.1)
+# sim.set_number_of_neurons_per_core(sim.IF_cond_exp,64)
 # sim.set_number_of_neurons_per_core(sim.SpikeSourceArray,128)
 
 #================================================================================================
@@ -177,7 +257,9 @@ input_pop = sim.Population(number_of_inputs,sim.SpikeSourceArray(spike_times=inp
 # inh_pop = sim.Population(1,sim.SpikeSourceArray(spike_times=inh_spikes))
 # cd_pop = sim.Population(1,sim.IF_curr_exp,target_cell_params,label="fixed_weight_scale")
 # cd_pop = sim.Population(target_pop_size,sim.IF_curr_exp,one_to_one_cond_params,label="fixed_weight_scale")
-cd_pop = sim.Population(target_pop_size,sim.IF_curr_exp,one_to_one_cond_params,label="fixed_weight_scale")
+# cd_pop = sim.Population(target_pop_size,sim.extra_models.Izhikevich_cond,t_stellate_izk_class_2_params,label="fixed_weight_scale_cond")
+cd_pop = sim.Population(target_pop_size,sim.extra_models.Izhikevich_cond,octopus_params_cond_izh,label="fixed_weight_scale_cond")
+# cd_pop = sim.Population(target_pop_size,sim.IF_cond_exp,octopus_params_cond,label="fixed_weight_scale_cond")
 # cd_pop = sim.Population(1,sim.IF_curr_exp,on_params,label="fixed_weight_scale")
 # cd_pop = sim.Population(1,sim.IF_curr_exp,inh_params,label="fixed_weight_scale")
 # inh_pop =
@@ -214,7 +296,7 @@ input_projection = sim.Projection(input_pop,cd_pop,sim.AllToAllConnector(),synap
 #inh_projection = sim.Projection(inh_pop,cd_pop,sim.AllToAllConnector(),synapse_type=sim.StaticSynapse(weight=inh_weight),receptor_type='inhibitory')
 # inh_projection = sim.Projection(inh_pop,cd_pop,sim.AllToAllConnector(),synapse_type=stdp_model_cd,receptor_type='inhibitory')
 
-duration = 30.#max(input_spikes[0])
+duration = 150.#max(input_spikes[0])
 
 sim.run(duration)
 

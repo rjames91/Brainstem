@@ -1,0 +1,13 @@
+        Memory Usage by Core
+        ====================
+
+Generated: Tue Sep 19 10:48:31 2017 for target machine '10.2.225.1'
+
+SDRAM reqs for core (0,0,4) is 1024 KB
+SDRAM reqs for core (0,0,5) is 533 KB
+SDRAM reqs for core (0,0,3) is 134 KB
+SDRAM reqs for core (0,0,6) is 533 KB
+SDRAM reqs for core (0,0,7) is 533 KB
+SDRAM reqs for core (0,0,2) is 533 KB
+**** Chip: (0, 0) has total memory usage of 3294 KB (3373132 bytes) out of a max of 120575 KB (123469792 bytes)
+

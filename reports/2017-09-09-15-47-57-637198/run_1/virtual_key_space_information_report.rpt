@@ -1,0 +1,15 @@
+Vertex: AN pop:0:1239
+    Partition: SPIKE, Routing Info: [KeyAndMask:0x0L:0xfffff800]
+Vertex: CN_pop:0:99
+Vertex: CN_pop:100:199
+Vertex: CN_pop:200:299
+Vertex: CN_pop:300:399
+Vertex: CN_pop:400:499
+Vertex: CN_pop:500:599
+Vertex: CN_pop:600:699
+Vertex: CN_pop:700:799
+Vertex: CN_pop:800:899
+Vertex: CN_pop:900:999
+Vertex: CN_pop:1000:1099
+Vertex: CN_pop:1100:1199
+Vertex: CN_pop:1200:1239

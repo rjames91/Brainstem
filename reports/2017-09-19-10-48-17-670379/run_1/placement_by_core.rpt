@@ -1,0 +1,31 @@
+        Placement Information by Core
+        =============================
+
+Generated: Tue Sep 19 10:48:31 2017 for target machine '10.2.225.1'
+
+**** Chip: (0, 0)
+Application cores: 18
+  Processor 2: Vertex: 'D_stellate_pop', pop size: 1141
+              Slice on this core: 765:1019 (255 atoms)
+              Model: IFCondExpBase
+
+  Processor 3: Vertex: 'D_stellate_pop', pop size: 1141
+              Slice on this core: 1020:1140 (121 atoms)
+              Model: IFCondExpBase
+
+  Processor 4: Vertex: 'AN pop', pop size: 1240
+              Slice on this core: 0:1239 (1240 atoms)
+              Model: SpikeSourceArray
+
+  Processor 5: Vertex: 'D_stellate_pop', pop size: 1141
+              Slice on this core: 0:254 (255 atoms)
+              Model: IFCondExpBase
+
+  Processor 6: Vertex: 'D_stellate_pop', pop size: 1141
+              Slice on this core: 255:509 (255 atoms)
+              Model: IFCondExpBase
+
+  Processor 7: Vertex: 'D_stellate_pop', pop size: 1141
+              Slice on this core: 510:764 (255 atoms)
+              Model: IFCondExpBase
+

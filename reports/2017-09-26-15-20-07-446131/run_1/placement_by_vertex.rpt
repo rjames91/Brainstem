@@ -1,0 +1,31 @@
+        Placement Information by Vertex
+        ===============================
+
+Generated: Tue Sep 26 15:20:21 2017 for target machine '10.2.225.161'
+
+**** Vertex: 'AN pop'
+Model: SpikeSourceArray
+Pop size: 500
+Machine Vertices: 
+  Slice 0:499 (500 atoms) on core (0, 0, 5) 
+
+**** Vertex: 'D_stellate_pop'
+Model: IFCondExpBase
+Pop size: 1
+Machine Vertices: 
+  Slice 0:0 (1 atoms) on core (0, 0, 3) 
+
+**** Vertex: 'T_stellate_pop'
+Model: IFCondExpBase
+Pop size: 500
+Machine Vertices: 
+  Slice 0:254 (255 atoms) on core (0, 0, 6) 
+  Slice 255:499 (245 atoms) on core (0, 0, 7) 
+
+**** Vertex: 'Primary_like_pop'
+Model: IFCurrExpBase
+Pop size: 500
+Machine Vertices: 
+  Slice 0:254 (255 atoms) on core (0, 0, 2) 
+  Slice 255:499 (245 atoms) on core (0, 0, 4) 
+

@@ -1,0 +1,10 @@
+Vertex: AN pop:0:499
+    Partition: SPIKE, Routing Info: [KeyAndMask:0x200L:0xfffffe00]
+Vertex: D_stellate_pop:0:0
+    Partition: SPIKE, Routing Info: [KeyAndMask:0x0L:0xffffffff]
+Vertex: T_stellate_pop:0:254
+    Partition: SPIKE, Routing Info: [KeyAndMask:0x100L:0xffffff00]
+Vertex: T_stellate_pop:255:499
+    Partition: SPIKE, Routing Info: [KeyAndMask:0x400L:0xffffff00]
+Vertex: Primary_like_pop:0:254
+Vertex: Primary_like_pop:255:499
