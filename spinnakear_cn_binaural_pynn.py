@@ -6,7 +6,7 @@ from pyNN.random import NumpyRNG, RandomDistribution
 import os
 import subprocess
 import time as local_time
-from spinnakear import SpiNNakEar
+from spinnak_ear.spinnakear import SpiNNakEar
 from pacman.model.constraints.partitioner_constraints.max_vertex_atoms_constraint import MaxVertexAtomsConstraint
 from elephant.statistics import isi,cv
 
@@ -119,16 +119,16 @@ dBSPL=60
 wav_directory = '/home/rjames/SpiNNaker_devel/OME_SpiNN/'
 input_directory = '/home/rjames/Dropbox (The University of Manchester)/EarProject/Pattern_recognition/spike_trains/IC_spikes'
 
-tone_1 = generate_signal(freq=1000,dBSPL=dBSPL,duration=0.05,
+tone_1,amp = generate_signal(freq=1000,dBSPL=dBSPL,duration=0.05,
                        modulation_freq=0.,fs=Fs,ramp_duration=0.005,plt=None,silence=True,silence_duration=0.075)
-tone_1_r = generate_signal(freq=1000,dBSPL=0.,duration=0.05,
+tone_1_r,amp = generate_signal(freq=1000,dBSPL=0.,duration=0.05,
                        modulation_freq=0.,fs=Fs,ramp_duration=0.005,plt=None,silence=True,silence_duration=0.075)
 tone_1_stereo = np.asarray([tone_1,tone_1_r])
 
-timit_l = generate_signal(signal_type='file',dBSPL=dBSPL,fs=Fs,ramp_duration=0.0025,silence=True,
+timit_l,amp = generate_signal(signal_type='file',dBSPL=dBSPL,fs=Fs,ramp_duration=0.0025,silence=True,
                             file_name=wav_directory+'10788.wav',plt=None,channel=0)
-timit_r = generate_signal(signal_type='file',dBSPL=dBSPL/2,fs=Fs,ramp_duration=0.0025,silence=True,
-                            file_name=wav_directory+'10788.wav',plt=None,channel=1)
+timit_r,amp = generate_signal(signal_type='file',dBSPL=dBSPL,fs=Fs,ramp_duration=0.0025,silence=True,
+                            file_name=wav_directory+'10788.wav',plt=None,channel=1,amp=amp)
 timit = numpy.asarray([timit_l,timit_r])
 
 sounds_dict = {
@@ -138,9 +138,9 @@ sounds_dict = {
 }
 n_fibres = 1000
 timestep = 1.0#0.1#
-required_total_time = 20.
+required_total_time = 1.
 
-stimulus_list = ['tone_1_stereo']
+stimulus_list = ['timit']
 duration_dict = {}
 test_file = ''
 for stim_string in stimulus_list:
@@ -575,6 +575,5 @@ print "simulation of {}s complete in {}s".format(duration/1000.,local_time.time(
 np.savez_compressed(input_directory+'/cn_' + test_file + '_{}an_fibres_{}ms_timestep_{}dB_{}s'.format
                      (number_of_inputs,timestep,dBSPL,int(duration/1000.)),an_spikes=[],
                      t_spikes=t_spikes,d_spikes=d_spikes,b_spikes=b_spikes,o_spikes=o_spikes,onset_times=onset_times)
-
 
 plt.show()
