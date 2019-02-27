@@ -6,7 +6,7 @@ from pyNN.random import NumpyRNG, RandomDistribution
 import os
 import subprocess
 import time as local_time
-from spinnak_ear.spinnakear import SpiNNakEar
+from spinnak_ear.spinnakear import SpiNNakEar,naive_n_chips_calc
 from pacman.model.constraints.partitioner_constraints.max_vertex_atoms_constraint import MaxVertexAtomsConstraint
 from elephant.statistics import isi,cv
 #================================================================================================
@@ -112,7 +112,7 @@ sub_pop = False
 conn_pre_gen = False
 lateral = True
 
-Fs = 22050.#100000.#
+Fs = 50e3#100000.#
 dBSPL=50
 wav_directory = '/home/rjames/SpiNNaker_devel/OME_SpiNN/'
 input_directory = '/home/rjames/Dropbox (The University of Manchester)/EarProject/Pattern_recognition/spike_trains/IC_spikes'
@@ -157,7 +157,7 @@ sounds_dict = {
                 "timit":timit,
                 "noise":noise
 }
-n_fibres = 300
+n_fibres = 1000
 timestep = 1.0#0.1#
 required_total_time = 2.#tone_duration#
 
@@ -264,8 +264,18 @@ else:
 #================================================================================================
 # SpiNNaker setup
 #================================================================================================
+n_total = int(6.66 * n_fibres)
+# n_total = 2. * number_of_inputs
+#ratios taken from campagnola & manis 2014 mouse
+n_t = int(n_total * 2./3 * 24./89)
+n_d = int(n_total * 1./3 * 24./89)
+n_b = int(n_total * 55./89)#number_of_inputs#
+n_o = int(n_total * 10./89.)
+n_moc = int(n_fibres * (360/30e3))
+
+n_chips_required = naive_n_chips_calc(n_fibres/10,n_ears,[(n_t,255),(n_d,255),(n_b,255),(n_o,255),(n_moc,255)])
 time_start = local_time.time()
-sim.setup(timestep=timestep)
+sim.setup(timestep=timestep,n_chips_required=n_chips_required)
 sim.set_number_of_neurons_per_core(sim.IF_cond_exp,255)
 sim.set_number_of_neurons_per_core(sim.extra_models.Izhikevich_cond,255)
 
@@ -281,22 +291,13 @@ sim.set_number_of_neurons_per_core(sim.extra_models.Izhikevich_cond,255)
 for ear_index in range(n_ears):
     number_of_inputs = n_fibres
 
-    spinnakear_param_file = None#input_directory+'/spinnakear_params_ear{}_{}fibres.npz'.format(ear_index,n_fibres)
+    spinnakear_param_file = input_directory+'/spinnakear_params_ear{}_{}fibres.npz'.format(ear_index,n_fibres)
     spinnakear_objects[ear_index] = SpiNNakEar(audio_input=audio_data[ear_index],fs=Fs,
                                                                      n_channels=number_of_inputs/10,
                                                                      pole_freqs=None,param_file=spinnakear_param_file,ear_index=ear_index)#freq*np.ones(number_of_inputs/10))
     input_pops[ear_index]=sim.Population(number_of_inputs,spinnakear_objects[ear_index],label="AN_Pop_ear{}".format(ear_index))
     input_pops[ear_index].record(['spikes','moc'])
     # input_pops[ear_index].record(['spikes'])
-
-    n_total = int(6.66 * number_of_inputs)
-    # n_total = 2. * number_of_inputs
-    #ratios taken from campagnola & manis 2014 mouse
-    n_t = int(n_total * 2./3 * 24./89)
-    n_d = int(n_total * 1./3 * 24./89)
-    n_b = int(n_total * 55./89)#number_of_inputs#
-    n_o = int(n_total * 10./89.)
-    n_moc = int(number_of_inputs * (360/30e3))
 
     #================================================================================================
     # Build Populations
@@ -562,6 +563,9 @@ if lateral is True:
 if conn_pre_gen is False:
     np.savez_compressed(input_directory + '/cn_{}an_fibres_{}ears_connectivity.npz'.format
     (n_fibres, n_ears),connection_dicts=connection_dicts)
+
+
+
 
 max_period = 6000.
 num_recordings =1#int((duration/max_period)+1)
