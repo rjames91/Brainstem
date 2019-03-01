@@ -111,6 +111,7 @@ IZH_EX_SUBCOR = {'a': 0.02,
 sub_pop = False
 conn_pre_gen = False
 lateral = True
+moc_feedback = True
 
 Fs = 50e3#100000.#
 dBSPL=50
@@ -161,7 +162,7 @@ n_fibres = 1000
 timestep = 1.0#0.1#
 required_total_time = 2.#tone_duration#
 
-stimulus_list = ["tone_{}Hz_stereo".format(freq)]#["timit"]#
+stimulus_list = ["timit"]#["tone_{}Hz_stereo".format(freq)]#
 duration_dict = {}
 test_file = ''
 for stim_string in stimulus_list:
@@ -525,30 +526,35 @@ if lateral is True:
                                                      sim.FromListConnector(t_mocc_list),
                                                      synapse_type=sim.StaticSynapse())
             #ipsilateral moc
-            n_moc_an_connections = RandomDistribution('uniform', [5, 10])
+            av_n_moc_connections = int(np.ceil((number_of_inputs/10)/n_moc))
+            n_moc_an_connections = RandomDistribution('normal_clipped', [av_n_moc_connections, 0.1 * av_n_moc_connections, 0, av_n_moc_connections * 2.])
+            n_ohcs = int(number_of_inputs/10.)
+            # n_moc_an_connections = RandomDistribution('uniform', [5, 10])
             moc_an_weight = 1.
+            uncrossed_sigma = n_ohcs/10.#1 octave of full range
             if conn_pre_gen:
                 moc_an_list = connection_dicts[ear_index]['moc_an_list']
             else:
-                moc_an_list = normal_dist_connection_builder(n_moc, number_of_inputs/10, RandomDistribution,
+                moc_an_list = normal_dist_connection_builder(n_moc, n_ohcs, RandomDistribution,
                                                                      conn_num=n_moc_an_connections, dist=1.,
-                                                                     sigma=1., conn_weight=moc_an_weight)
+                                                                     sigma=uncrossed_sigma, conn_weight=moc_an_weight)
 
                 connection_dicts[ear_index]['moc_an_list'] = moc_an_list
-
-            moc_an_projs[ear_index] = sim.Projection(moc_pops[ear_index], input_pops[ear_index],
+            if moc_feedback:
+                moc_an_projs[ear_index] = sim.Projection(moc_pops[ear_index], input_pops[ear_index],
                                                      sim.FromListConnector(moc_an_list),
                                                      synapse_type=sim.StaticSynapse())
             #contralateral moc
             if conn_pre_gen:
                 moc_anc_list = connection_dicts[ear_index]['moc_anc_list']
             else:
-                moc_anc_list = normal_dist_connection_builder(n_moc, number_of_inputs/10, RandomDistribution,
+                moc_anc_list = normal_dist_connection_builder(n_moc, n_ohcs, RandomDistribution,
                                                                      conn_num=n_moc_an_connections, dist=1.,
                                                                      # sigma=number_of_inputs / 100., conn_weight=moc_an_weight)
-                                                                     sigma=1., conn_weight=moc_an_weight)
+                                                                     sigma=uncrossed_sigma/2., conn_weight=moc_an_weight)
                 connection_dicts[ear_index]['moc_anc_list'] = moc_an_list
-            moc_anc_projs[ear_index] = sim.Projection(moc_pops[ear_index], input_pops[contra_ear_index],
+            if moc_feedback:
+                moc_anc_projs[ear_index] = sim.Projection(moc_pops[ear_index], input_pops[contra_ear_index],
                                                      sim.FromListConnector(moc_anc_list),
                                                      synapse_type=sim.StaticSynapse())
 
@@ -687,8 +693,9 @@ plt.hist(all_isi)
 # plt.figure("ISI single")
 # plt.hist(single_isi)
 
-np.savez_compressed(input_directory+'/cn_' + test_file + '_{}an_fibres_{}ms_timestep_{}dB_{}s'.format
-                     (number_of_inputs,timestep,dBSPL,int(duration/1000.)),an_spikes=an_spikes,
-                     t_spikes=t_spikes,d_spikes=d_spikes,b_spikes=b_spikes,o_spikes=o_spikes,onset_times=onset_times)
+np.savez_compressed(input_directory+'/cn_' + test_file + '_{}an_fibres_{}ms_timestep_{}dB_{}s_moc_{}'.format
+                     (number_of_inputs,timestep,dBSPL,int(duration/1000.),moc_feedback),an_spikes=an_spikes,
+                     t_spikes=t_spikes,d_spikes=d_spikes,b_spikes=b_spikes,o_spikes=o_spikes,onset_times=onset_times,
+                    moc_att=moc_att,Fs=Fs)
 
 plt.show()

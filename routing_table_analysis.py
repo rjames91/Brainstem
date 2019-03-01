@@ -3,10 +3,10 @@ import numpy as np
 from glob import glob
 import os
 
-n_entries_threshold = 64#1024
-directory = './reports_local/reports/2019-02-13-15-10-13-332440/run_1/routing_tables_generated'
-fnames = glob(directory+'routing_table_*.rpt')
-output_file = open(directory+"problem_routers.txt",'a+')
+n_entries_threshold = 1024
+directory = './reports_local/reports/2019-02-13-15-43-28-472736/run_1/routing_tables_generated'
+fnames = glob(directory+'/routing_table_*.rpt')
+output_file = open(directory+"/problem_routers.txt",'a+')
 
 
 for f in fnames:
