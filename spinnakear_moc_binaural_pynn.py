@@ -1,8 +1,6 @@
 import spynnaker8 as sim
 import numpy as np
 import pylab as plt
-import sys
-sys.path.append("../PyNN8Examples") 
 from signal_prep import *
 from pyNN.random import NumpyRNG, RandomDistribution
 import os
@@ -115,14 +113,14 @@ IZH_EX_SUBCOR = {'a': 0.02,
                    'u': 10.,#0.,
                    }
 sub_pop = False
-conn_pre_gen = True
+conn_pre_gen = False
 lateral = True
 moc_feedback = True
 
 Fs = 50e3#22050.#
 dBSPL=65
 wav_directory = '../OME_SpiNN/'
-input_directory = '/tmp/rob_test_results'
+input_directory = '/home/rjames/Dropbox (The University of Manchester)/EarProject/Pattern_recognition/spike_trains/IC_spikes'
 
 freq = 1000.
 tone = generate_signal(freq=freq,dBSPL=dBSPL,duration=0.05,
@@ -153,9 +151,9 @@ sounds_dict = {
                 "timit":timit,
 		"noise":noise_stereo
 }
-n_fibres = 10000
-timestep = 0.1#1.0#
-required_total_time = 1.
+n_fibres = 300
+timestep = 1.0#0.1#
+required_total_time = 0.05#1.
 
 stimulus_list = ['timit']#["tone_{}Hz_stereo".format(freq)]#
 duration_dict = {}
@@ -218,20 +216,14 @@ n_ears = num_channels
 input_pops = [[] for _ in range(n_ears)]
 t_pops = [[] for _ in range(n_ears)]
 d_pops = [[] for _ in range(n_ears)]
-
-
 moc_pops = [[] for _ in range(n_ears)]
-
 an_t_projs = [[] for _ in range(n_ears)]
 an_d_projs = [[] for _ in range(n_ears)]
-
 t_d_projs = [[] for _ in range(n_ears)]
 t_t_projs = [[] for _ in range(n_ears)]
-
 t_mocc_projs = [[] for _ in range(n_ears)]
 d_t_projs = [[] for _ in range(n_ears)]
 d_d_projs = [[] for _ in range(n_ears)]
-
 d_tc_projs = [[] for _ in range(n_ears)]
 d_dc_projs = [[] for _ in range(n_ears)]
 moc_anc_projs = [[] for _ in range(n_ears)]
@@ -243,7 +235,6 @@ d_spikes = [[] for _ in range(n_ears)]
 moc_spikes = [[] for _ in range(n_ears)]
 an_spikes = [[] for _ in range(n_ears)]
 moc_att = [[] for _ in range(n_ears)]
-
 
 if conn_pre_gen:
     try:
@@ -265,11 +256,9 @@ n_total = int(6.66 * number_of_inputs)
 #ratios taken from campagnola & manis 2014 mouse
 n_t = int(n_total * 2./3 * 24./89)
 n_d = int(n_total * 1./3 * 24./89)
-n_b = int(n_total * 55./89)#number_of_inputs#
-n_o = int(n_total * 10./89.)
 n_moc = int(number_of_inputs * (360/30e3))
 time_start = local_time.time()
-n_chips_required = naive_n_chips_calc(n_fibres/10,n_ears,[(n_t,255),(n_d,255),(n_b,255),(n_o,255),(n_moc,255)])
+n_chips_required = naive_n_chips_calc(n_fibres/10,n_ears,[(n_t,255),(n_d,255),(n_moc,255)])
 print "n_chips required = {}".format(n_chips_required)
 sim.setup(timestep=timestep,n_chips_required=n_chips_required)
 sim.set_number_of_neurons_per_core(sim.IF_cond_exp,255)
@@ -279,7 +268,7 @@ for ear_index in range(n_ears):
     #================================================================================================
     # Build Populations
     #================================================================================================
-    pop_size = max([number_of_inputs,n_d,n_t,n_b,n_o,n_moc])
+    pop_size = max([number_of_inputs,n_d,n_t,n_moc])
     if pop_size != number_of_inputs: # need to scale
         an_spatial=False
     else:
@@ -364,16 +353,10 @@ n_lateral_connections = 100.
 lateral_connection_strength = 0.1#0.3#0.6
 lateral_connection_weight = lateral_connection_strength/n_lateral_connections
 d_t_ratio = float(n_d)/n_t
-t_b_ratio = float(n_t)/n_b
-d_b_ratio = float(n_d)/n_b
 inh_ratio = 0.1#1.
 
 t_lat_sigma = n_total * 0.01
 d_lat_sigma = n_total * 0.1
-b_lat_sigma = n_total * 0.01
-# t_lat_sigma = 2.
-# d_lat_sigma = 1.
-# b_lat_sigma = 1.
 
 if lateral is True:
     for ear_index in range(n_ears):
@@ -381,8 +364,6 @@ if lateral is True:
         lat_t_weight = RandomDistribution('normal_clipped',[av_lat_t,0.1*av_lat_t,0,av_lat_t*2.])
         av_lat_d = lateral_connection_weight * av_an_d
         lat_d_weight = RandomDistribution('normal_clipped',[av_lat_d,0.1*av_lat_d,0,av_lat_d*2.])
-        av_lat_b = lateral_connection_weight * av_an_b
-        lat_b_weight = RandomDistribution('normal_clipped',[av_lat_b,0.1*av_lat_b,0,av_lat_b*2.])
 
         # plt.hist(t_t_weight.next(1000),bins=100)
         if conn_pre_gen:
@@ -477,6 +458,7 @@ if lateral is True:
                 moc_anc_projs[ear_index] = sim.Projection(moc_pops[ear_index], input_pops[contra_ear_index],
                                                      sim.FromListConnector(moc_anc_list),
                                                      synapse_type=sim.StaticSynapse())
+
         if conn_pre_gen is False:
             connection_dicts[ear_index]['t_t_list'] = t_t_list
             connection_dicts[ear_index]['t_d_list'] = t_d_list

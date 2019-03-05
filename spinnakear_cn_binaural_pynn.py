@@ -114,7 +114,7 @@ lateral = True
 moc_feedback = True
 
 Fs = 50e3#100000.#
-dBSPL=50
+dBSPL=65
 wav_directory = '/home/rjames/SpiNNaker_devel/OME_SpiNN/'
 input_directory = '/home/rjames/Dropbox (The University of Manchester)/EarProject/Pattern_recognition/spike_trains/IC_spikes'
 
@@ -158,7 +158,7 @@ sounds_dict = {
                 "timit":timit,
                 "noise":noise
 }
-n_fibres = 1000
+n_fibres = 300
 timestep = 1.0#0.1#
 required_total_time = 2.#tone_duration#
 
@@ -292,7 +292,7 @@ sim.set_number_of_neurons_per_core(sim.extra_models.Izhikevich_cond,255)
 for ear_index in range(n_ears):
     number_of_inputs = n_fibres
 
-    spinnakear_param_file = input_directory+'/spinnakear_params_ear{}_{}fibres.npz'.format(ear_index,n_fibres)
+    spinnakear_param_file = None#input_directory+'/spinnakear_params_ear{}_{}fibres.npz'.format(ear_index,n_fibres)
     spinnakear_objects[ear_index] = SpiNNakEar(audio_input=audio_data[ear_index],fs=Fs,
                                                                      n_channels=number_of_inputs/10,
                                                                      pole_freqs=None,param_file=spinnakear_param_file,ear_index=ear_index)#freq*np.ones(number_of_inputs/10))
@@ -341,8 +341,8 @@ for ear_index in range(n_ears):
     n_an_t_connections = RandomDistribution('uniform',[4.,6.])
     av_an_t = w2s_t/5.
     # an_t_weight = RandomDistribution('uniform',[0,av_an_t*2])
-    an_t_weight = RandomDistribution('uniform',[av_an_t/5.,av_an_t*2])
-    # an_t_weight = RandomDistribution('normal_clipped',[av_an_t,0.1*av_an_t,0,av_an_t*2.])
+    # an_t_weight = RandomDistribution('uniform',[av_an_t/5.,av_an_t*2])
+    an_t_weight = RandomDistribution('normal_clipped',[av_an_t,0.1*av_an_t,0,av_an_t*2.])
     if conn_pre_gen:
         an_t_list = connection_dicts[ear_index]['an_t_list']
     else:
@@ -535,9 +535,11 @@ if lateral is True:
             if conn_pre_gen:
                 moc_an_list = connection_dicts[ear_index]['moc_an_list']
             else:
-                moc_an_list = normal_dist_connection_builder(n_moc, n_ohcs, RandomDistribution,
+                moc_an_list = normal_dist_connection_builder(n_ohcs,n_moc, RandomDistribution,
                                                                      conn_num=n_moc_an_connections, dist=1.,
                                                                      sigma=uncrossed_sigma, conn_weight=moc_an_weight)
+                #flip pre and post due to reverse perspective in conn builder
+                moc_an_list = [(pre,post,w,d) for (post,pre,w,d) in moc_an_list]
 
                 connection_dicts[ear_index]['moc_an_list'] = moc_an_list
             if moc_feedback:
@@ -548,10 +550,12 @@ if lateral is True:
             if conn_pre_gen:
                 moc_anc_list = connection_dicts[ear_index]['moc_anc_list']
             else:
-                moc_anc_list = normal_dist_connection_builder(n_moc, n_ohcs, RandomDistribution,
+                moc_anc_list = normal_dist_connection_builder(n_ohcs,n_moc,  RandomDistribution,
                                                                      conn_num=n_moc_an_connections, dist=1.,
                                                                      # sigma=number_of_inputs / 100., conn_weight=moc_an_weight)
                                                                      sigma=uncrossed_sigma/2., conn_weight=moc_an_weight)
+                # flip pre and post due to reverse perspective in conn builder
+                moc_anc_list = [(pre, post, w, d) for (post, pre, w, d) in moc_anc_list]
                 connection_dicts[ear_index]['moc_anc_list'] = moc_an_list
             if moc_feedback:
                 moc_anc_projs[ear_index] = sim.Projection(moc_pops[ear_index], input_pops[contra_ear_index],
@@ -569,9 +573,6 @@ if lateral is True:
 if conn_pre_gen is False:
     np.savez_compressed(input_directory + '/cn_{}an_fibres_{}ears_connectivity.npz'.format
     (n_fibres, n_ears),connection_dicts=connection_dicts)
-
-
-
 
 max_period = 6000.
 num_recordings =1#int((duration/max_period)+1)
@@ -631,14 +632,11 @@ for ear_index in range(n_ears):
         #             duration=duration / 1000.,title="PSTH_T ear{}".format(0))
     middle_channel = int(len(moc_att[ear_index]) / 2.)
     plt.figure("moc attenuation ear{} channel {}".format(ear_index, middle_channel))
-    #    for moc_signal in moc_att:
-    #        x = np.linspace(0, duration, len(moc_signal))
-    #        plt.plot(x, moc_signal)
-
     moc_signal = moc_att[ear_index][middle_channel]
     x = np.linspace(0, duration, len(moc_signal))
     plt.plot(x, moc_signal)
     plt.xlabel("time (ms)")
+
     # spike_trains = [spikes for spikes in t_spikes[ear_index] if len(spikes>0)]
     # half_point = len(spike_trains)/2
     # t_isi = [isi(spike_train) for spike_train in spike_trains[half_point]]
