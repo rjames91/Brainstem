@@ -265,11 +265,9 @@ n_total = int(6.66 * number_of_inputs)
 #ratios taken from campagnola & manis 2014 mouse
 n_t = int(n_total * 2./3 * 24./89)
 n_d = int(n_total * 1./3 * 24./89)
-n_b = int(n_total * 55./89)#number_of_inputs#
-n_o = int(n_total * 10./89.)
 n_moc = int(number_of_inputs * (360/30e3))
 time_start = local_time.time()
-n_chips_required = naive_n_chips_calc(n_fibres/10,n_ears,[(n_t,255),(n_d,255),(n_b,255),(n_o,255),(n_moc,255)])
+n_chips_required = naive_n_chips_calc(n_fibres/10,n_ears,[(n_t,255),(n_d,255),(n_moc,255)])
 print "n_chips required = {}".format(n_chips_required)
 sim.setup(timestep=timestep,n_chips_required=n_chips_required)
 sim.set_number_of_neurons_per_core(sim.IF_cond_exp,255)
@@ -279,7 +277,7 @@ for ear_index in range(n_ears):
     #================================================================================================
     # Build Populations
     #================================================================================================
-    pop_size = max([number_of_inputs,n_d,n_t,n_b,n_o,n_moc])
+    pop_size = max([number_of_inputs,n_d,n_t,n_moc])
     if pop_size != number_of_inputs: # need to scale
         an_spatial=False
     else:
@@ -364,8 +362,6 @@ n_lateral_connections = 100.
 lateral_connection_strength = 0.1#0.3#0.6
 lateral_connection_weight = lateral_connection_strength/n_lateral_connections
 d_t_ratio = float(n_d)/n_t
-t_b_ratio = float(n_t)/n_b
-d_b_ratio = float(n_d)/n_b
 inh_ratio = 0.1#1.
 
 t_lat_sigma = n_total * 0.01
@@ -381,9 +377,6 @@ if lateral is True:
         lat_t_weight = RandomDistribution('normal_clipped',[av_lat_t,0.1*av_lat_t,0,av_lat_t*2.])
         av_lat_d = lateral_connection_weight * av_an_d
         lat_d_weight = RandomDistribution('normal_clipped',[av_lat_d,0.1*av_lat_d,0,av_lat_d*2.])
-        av_lat_b = lateral_connection_weight * av_an_b
-        lat_b_weight = RandomDistribution('normal_clipped',[av_lat_b,0.1*av_lat_b,0,av_lat_b*2.])
-
         # plt.hist(t_t_weight.next(1000),bins=100)
         if conn_pre_gen:
             t_t_list = connection_dicts[ear_index]['t_t_list']
@@ -545,7 +538,7 @@ sim.end()
 print "simulation of {}s complete in {}s".format(duration/1000.,local_time.time()-time_start)
 
 np.savez_compressed(input_directory+'/moc_' + test_file + '_{}an_fibres_{}ms_timestep_{}dB_lateral{}_moc_{}'.format
-                     (number_of_inputs,timestep,dBSPL,lateral,moc_feedback),an_spikes=an_spikes,
+                     (number_of_inputs,timestep,dBSPL,lateral,moc_feedback),an_spikes=an_spikes,moc_spikes=moc_spikes,
                      #t_spikes=t_spikes,d_spikes=d_spikes,b_spikes=b_spikes,o_spikes=o_spikes,
                      moc_att=moc_att,onset_times=onset_times,Fs=Fs)
 
