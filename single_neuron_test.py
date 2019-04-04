@@ -6,6 +6,7 @@ from pyNN.random import NumpyRNG, RandomDistribution
 import os
 import subprocess
 from pyNN.utility.plotting import Figure, Panel
+from elephant.statistics import isi,cv
 
 
 #================================================================================================
@@ -129,17 +130,6 @@ one_to_one_cond_params = {
                 'v_thresh': -64.
 }
 
-t_stellate_izk_class_2_params = {
-               'a':0.2,
-               'b':0.26,
-               'c':-65,
-               'd':0,
-               'u':-15,
-               'tau_syn_E': 0.94,#3.0,#2.5,#
-               #'e_rev_E': -54.,#-55.1,#
-               'tau_syn_I': 4.0,#2.5,#
-               'v': -63.0,
-}
 
 izk_class_1_params = {
                'a':0.03,
@@ -201,17 +191,41 @@ octopus_params_cond_izh = {
                'v': -70.,
                }
 
+t_stellate_izk_class_2_params = {
+               'a':0.5,#0.02,#0.2,
+               'b':0.26,
+               'c':-65,
+               'd':10,#400,#220,#12,#vary between 12 and 220 for CRs 100-500Hz
+               'u':0,#-15,
+               'tau_syn_E': 0.94,#3.0,#2.5,#
+               # 'tau_syn_E':4. ,#3.0,#2.5,#
+               #'e_rev_E': -54.,#-55.1,#
+               'tau_syn_I': 4.0,#2.5,#
+               'v': -63.0,
+               # 'i_offset':-5.
+}
+
+bushy_params_cond = {#'cm': 5.,#57.,  # nF Only 200 cells in mouse CN
+               #'tau_m': 0.5,#10.0,#2.,#3.,#
+               'tau_syn_E': 2.,#2.5,#
+               #'e_rev_E': -25.,#-10.,#-35.,#-55.1,#
+               'v_reset': -60.,#-70.0,
+               'v_rest': -60.,
+               'v_thresh': -40.
+               }
 dB = 50#20
 input_directory = '/home/rjames/Dropbox (The University of Manchester)/EarProject/Pattern_recognition/spike_trains/IC_spikes'
 # cochlea_file = np.load(input_directory + '/spinnakear_1kHz_60s_{}dB.npz'.format(dB))
-cochlea_file = np.load(input_directory + '/spinnakear_13.5_1_kHz_75s_{}dB_1000fibres.npz'.format(dB))
+# cochlea_file = np.load(input_directory + '/spinnakear_13.5_1_kHz_75s_{}dB_1000fibres.npz'.format(dB))
 # an_spikes = [[i*7.+ 3.*(np.random.rand()-0.5) for i in range(50)]for _ in range(100)]#[[10.,11.,12.,13.]]#cochlea_file['scaled_times']
 # an_spikes = [[10.,15.,20.,100.,105.]]#,102,104]]
 # spike_times = [10.,15.,20.,100.,105.]
-spike_times = [50.,105.]
+# spike_times = [50.,105.]
+test_dur_ms = 1000#150#
+spike_times = [i for i in range(0,test_dur_ms,100)]
 an_spikes = []#,102,104]]
 
-n_inputs = 50
+n_inputs = 1
 spike_jitter = 1.
 for i in range(n_inputs):
     an_spikes.append([i+spike_jitter*(np.random.rand()-0.5) for i in spike_times])
@@ -220,8 +234,8 @@ for i in range(n_inputs):
 # for _ in range(60):
 #     an_spikes.append([10. + (5. * (np.random.rand()-0.5))])
 # an_spikes = cochlea_file['scaled_times']
-target_pop_size =1
-w2s_target = 3.#0.3#1.#0.7#1.#15.#0.005#0.0015#0.0006#1.5#4.5#0.12#2.5#5.
+target_pop_size =20
+w2s_target = 0.3#0.5#0.1#0.2#3.#0.7#1.#15.#0.005#0.0015#0.0006#1.5#4.5#0.12#2.5#5.
 # n_connection = 120.#50#100
 n_connections = RandomDistribution('uniform',[30.,120.])
 # connection_weight = w2s_target/n_connections#w2s_target#initial_weight*2.#/2.
@@ -236,8 +250,8 @@ number_of_inputs = len(an_spikes)#
 input_spikes = an_spikes
 # input_spikes =[]
 inh_spikes = []
-isi = 3.
-n_repeats = 20
+# isi = 3.
+# n_repeats = 20
 
 # for neuron in range(number_of_inputs):
 #      input_spikes.append([i*isi for i in range(n_repeats) if i<50 or i>100])
@@ -258,8 +272,8 @@ input_pop = sim.Population(number_of_inputs,sim.SpikeSourceArray(spike_times=inp
 # cd_pop = sim.Population(1,sim.IF_curr_exp,target_cell_params,label="fixed_weight_scale")
 # cd_pop = sim.Population(target_pop_size,sim.IF_curr_exp,one_to_one_cond_params,label="fixed_weight_scale")
 # cd_pop = sim.Population(target_pop_size,sim.extra_models.Izhikevich_cond,t_stellate_izk_class_2_params,label="fixed_weight_scale_cond")
-cd_pop = sim.Population(target_pop_size,sim.extra_models.Izhikevich_cond,octopus_params_cond_izh,label="fixed_weight_scale_cond")
-# cd_pop = sim.Population(target_pop_size,sim.IF_cond_exp,octopus_params_cond,label="fixed_weight_scale_cond")
+# cd_pop = sim.Population(target_pop_size,sim.extra_models.Izhikevich_cond,octopus_params_cond_izh,label="fixed_weight_scale_cond")
+cd_pop = sim.Population(target_pop_size,sim.IF_cond_exp,bushy_params_cond,label="fixed_weight_scale_cond")
 # cd_pop = sim.Population(1,sim.IF_curr_exp,on_params,label="fixed_weight_scale")
 # cd_pop = sim.Population(1,sim.IF_curr_exp,inh_params,label="fixed_weight_scale")
 # inh_pop =
@@ -284,7 +298,8 @@ cd_pop.record("all")
 #                                             conn_num,dist,sigma)
 
 # connection_weight = RandomDistribution('normal_clipped',[av_weight,av_weight/10.,0,2*av_weight])
-# connection_weight = RandomDistribution('uniform',[0,av_weight*2.])
+# connection_weight = RandomDistribution('normal_clipped',[av_weight,av_weight/100.,0,2*av_weight])
+# connection_weight = RandomDistribution('uniform',[av_weight/5.,av_weight*2])
 connection_weight = av_weight#w2s_target/number_of_inputs
 # an_on_list = normal_dist_connection_builder(number_of_inputs,target_pop_size,RandomDistribution,conn_num=n_connections,dist=1.,sigma=number_of_inputs/6.
 #                                             ,conn_weight=connection_weight)
@@ -296,7 +311,7 @@ input_projection = sim.Projection(input_pop,cd_pop,sim.AllToAllConnector(),synap
 #inh_projection = sim.Projection(inh_pop,cd_pop,sim.AllToAllConnector(),synapse_type=sim.StaticSynapse(weight=inh_weight),receptor_type='inhibitory')
 # inh_projection = sim.Projection(inh_pop,cd_pop,sim.AllToAllConnector(),synapse_type=stdp_model_cd,receptor_type='inhibitory')
 
-duration = 150.#max(input_spikes[0])
+duration = test_dur_ms#max(input_spikes[0])
 
 sim.run(duration)
 
@@ -335,7 +350,13 @@ Figure(
 # spike_raster_plot_8(input_spikes,plt,duration/1000.,number_of_inputs+1,0.001,title="input activity")
 # cell_voltage_plot_8(mem_v, plt, duration, [],scale_factor=0.0001,title='cd pop')
 
-# psth_plot_8(plt,numpy.arange(550,650),an_spikes,bin_width=0.01,duration=duration/1000.,title="PSTH_AN")
-# psth_plot_8(plt,numpy.arange(target_pop_size),ch_spikes,bin_width=0.001,duration=duration/1000.,title="PSTH_CH")
+# psth_plot_8(plt,numpy.arange(target_pop_size),cd_data.segments[0].spiketrains,bin_width=0.001,duration=duration/1000.,title="PSTH_CH")
+# isi_t = [isi(spikes) for spikes in cd_data.segments[0].spiketrains]
+# plt.figure("ISI")
+# for i,neuron in enumerate(isi_t):
+#     all_isi = [interval.item() for interval in neuron]
+#     plt.subplot(target_pop_size/2,2,i+1)
+#     plt.hist(all_isi)
+#     plt.xlim((0,20))
 
 plt.show()
