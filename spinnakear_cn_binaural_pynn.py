@@ -12,39 +12,6 @@ from elephant.statistics import isi,cv
 #================================================================================================
 # Simulation parameters
 #================================================================================================
-t_stellate_params_cond = {#'cm': 0.25,  # nF
-               # 'i_offset': 0.0,
-                'tau_m': 3.8,#10.0,#2.,#3.,#
-               # 'tau_refrac': 1.0,#2.0,#
-               'tau_syn_E': 0.94,#3.0,#2.5,#
-               #'e_rev_E': -54.,#-55.1,#
-               'tau_syn_I': 4.0,#2.5,#
-               'v_reset': -70.0,
-               'v_rest': -63.0,
-               'v_thresh': -41.7
-               }
-
-d_stellate_params_cond = {#'cm': 0.25,  # nF
-               # 'i_offset': 0.0,
-               'tau_m': 2.9,#10.0,#2.,#3.,#
-               # 'tau_refrac': 1.0,#2.0,#
-               'tau_syn_E': 4.88,#2.5,#
-               'e_rev_E': -30.,#-35.,#-25.,#-55.1,#
-               'tau_syn_I': 4.0,#2.5,#
-               'v_reset': -70.0,
-               'v_rest': -63.0,
-               'v_thresh': -39.5
-               }
-
-octopus_params_cond = {'cm': 1.,#57.,  # nF Only 200 cells in mouse CN
-               'tau_m': 0.5,#10.0,#2.,#3.,#
-               'tau_syn_E': 0.35,#2.5,#
-               'e_rev_E': -55.,#-25.,#-10.,#-35.,#-55.1,#
-               'v_reset': -60.6,#-70.0,
-               'v_rest': -60.6,
-               'v_thresh': -56.
-               }
-
 octopus_params_cond_izh = {
                # 'a':0.02,
                # 'b':-0.1,
@@ -105,13 +72,7 @@ d_stellate_izk_class_1_params = {
                'tau_syn_I':4.,
                'v': -63.0,
 }
-IZH_EX_SUBCOR = {'a': 0.02,
-                   'b': -0.1,
-                   'c': -55,
-                   'd': 6,
-                   'v': -75,
-                   'u': 10.,#0.,
-                   }
+
 sub_pop = False
 conn_pre_gen = False
 lateral = True
@@ -119,13 +80,13 @@ moc_feedback = True
 record_en = True
 
 Fs = 50e3#100000.#
-dBSPL=65
+dBSPL=100#65
 wav_directory = '/home/rjames/SpiNNaker_devel/OME_SpiNN/'
 input_directory = '/home/rjames/Dropbox (The University of Manchester)/EarProject/Pattern_recognition/spike_trains/IC_spikes'
 
 freq = 1000
 tone_duration = 0.05
-silence_duration = 0.075#0.2 #
+silence_duration = 0.2 #0.075#
 tone = generate_signal(freq=freq,dBSPL=dBSPL,duration=tone_duration,
                        modulation_freq=0.,fs=Fs,ramp_duration=0.005,plt=None,silence=True,silence_duration=silence_duration)
 tone_r = generate_signal(freq=freq,dBSPL=dBSPL-10,duration=tone_duration,
@@ -151,18 +112,6 @@ click_stereo = np.asarray([click,click])
 chirp = generate_signal(signal_type='sweep_tone',freq=[30,18e3],fs=Fs,dBSPL=dBSPL,duration=1.-(0.075*2),plt=None,silence=True,silence_duration=0.075)
 chirp_stereo = np.asarray([chirp,chirp])
 
-# diff = noise.size-timit_l.size
-# timit_l = np.append(timit_l,np.zeros(diff))
-# test = timit_l + noise
-# test /= test.max()
-# wavfile.write('./speech70_noise50.wav',Fs,test)
-# x = np.linspace(0,timit_l.size/Fs,timit_l.size)
-# plt.plot(x,timit_l,alpha=0.5)
-# plt.plot(x,noise,alpha=0.5)
-# plt.legend(['speech 70dBSPL','noise 50dBSPL'])
-# plt.xlabel('time (s)')
-# plt.show()
-
 sounds_dict = {
                 "tone_{}Hz".format(freq):tone,
                 "tone_{}Hz_stereo".format(freq):tone_stereo,
@@ -171,9 +120,9 @@ sounds_dict = {
                 "click":click_stereo,
                 "chirp":chirp_stereo
 }
-n_fibres = 1000
+n_fibres = 4000
 timestep = 0.1#1.0#
-required_total_time =  0.0002#50.#tone_duration#
+required_total_time =  0.0002#2.#50.#tone_duration#
 
 stimulus_list = ["tone_{}Hz_stereo".format(freq)]#["click"]#
 duration_dict = {}
@@ -255,6 +204,12 @@ d_dc_projs = [[] for _ in range(n_ears)]
 moc_anc_projs = [[] for _ in range(n_ears)]
 moc_an_projs = [[] for _ in range(n_ears)]
 
+t_incoming = [[] for _ in range(n_ears)]
+d_incoming = [[] for _ in range(n_ears)]
+b_incoming = [[] for _ in range(n_ears)]
+o_incoming = [[] for _ in range(n_ears)]
+moc_incoming = [[] for _ in range(n_ears)]
+
 t_spikes = [[[] for __ in range(n_tds)] for _ in range(n_ears)]
 d_spikes = [[] for _ in range(n_ears)]
 b_spikes = [[] for _ in range(n_ears)]
@@ -278,7 +233,6 @@ else:
 # SpiNNaker setup
 #================================================================================================
 n_total = int(6.66 * n_fibres)
-# n_total = 2. * number_of_inputs
 #ratios taken from campagnola & manis 2014 mouse
 n_t = int(n_total * 2./3 * 24./89)
 n_d = int(n_total * 1./3 * 24./89)
@@ -287,21 +241,16 @@ n_o = int(n_total * 10./89.)
 n_moc = int(n_fibres * (360/30e3))
 n_sub_t=int(n_t/n_tds)
 
-n_chips_required = naive_n_chips_calc(n_fibres/10,n_ears,[(n_t,255),(n_d,255),(n_b,255),(n_o,255),(n_moc,255)])
+max_neurons_per_core = 255
+n_chips_required = naive_n_chips_calc(n_fibres/10,n_ears,[(n_t,max_neurons_per_core),(n_d,max_neurons_per_core),
+                                                          (n_b,max_neurons_per_core),(n_o,max_neurons_per_core),
+                                                          (n_moc,max_neurons_per_core)])
 time_start = local_time.time()
 sim.setup(timestep=timestep,n_chips_required=n_chips_required)
-max_neurons_per_core = 255.
+
 sim.set_number_of_neurons_per_core(sim.IF_cond_exp,max_neurons_per_core)
 sim.set_number_of_neurons_per_core(sim.extra_models.Izhikevich_cond,max_neurons_per_core)
-
-# for ear_index in range(n_ears):
-#     number_of_inputs = n_fibres
-#
-#     spinnakear_param_file = input_directory+'/spinnakear_params_ear{}_{}fibres.npz'.format(ear_index,n_fibres)
-#     spinnakear_objects[ear_index] = SpiNNakEar(audio_input=audio_data[ear_index],fs=Fs,
-#                                                                      n_channels=number_of_inputs/10,
-#                                                                      pole_freqs=None,param_file=spinnakear_param_file)#freq*np.ones(number_of_inputs/10))
-#     input_pops[ear_index]=sim.Population(number_of_inputs,spinnakear_objects[ear_index],label="AN_Pop_ear{}".format(ear_index))
+max_dist_to_n_atoms_per_core_const = 3.05e-6#4.1e-7#1.35e-8#6.5e-7
 
 for ear_index in range(n_ears):
     number_of_inputs = n_fibres
@@ -312,7 +261,6 @@ for ear_index in range(n_ears):
                                                                      pole_freqs=None,param_file=spinnakear_param_file,ear_index=ear_index)#freq*np.ones(number_of_inputs/10))
     input_pops[ear_index]=sim.Population(number_of_inputs,spinnakear_objects[ear_index],label="AN_Pop_ear{}".format(ear_index))
     input_pops[ear_index].record(['spikes','moc'])
-    # input_pops[ear_index].record(['spikes'])
 
     #================================================================================================
     # Build Populations
@@ -320,37 +268,21 @@ for ear_index in range(n_ears):
     pop_size = max([number_of_inputs,n_d,n_t,n_b,n_o,n_moc])
     # plt.figure("stimulus ear {}".format(ear_index))
     # plt.plot(audio_data[ear_index])
-
-    # d_pops[ear_index]=sim.Population(pop_size,sim.extra_models.Izhikevich_cond,d_stellate_izk_class_1_params,label="d_stellate_fixed_weight_scale_cond{}".format(ear_index))
     d_pops[ear_index]=sim.Population(n_d,sim.extra_models.Izhikevich_cond,d_stellate_izk_class_1_params,label="d_stellate_fixed_weight_scale_cond{}".format(ear_index))
-    d_pops[ear_index].set_constraint(MaxVertexAtomsConstraint(int(max_neurons_per_core*(float(n_d)/pop_size))))
+    # d_pops[ear_index].set_constraint(MaxVertexAtomsConstraint(int(max_neurons_per_core*(float(n_d)/pop_size))))
 
-    # d_pops[ear_index]=sim.Population(pop_size,sim.IF_cond_exp,d_stellate_params_cond,label="d_stellate_fixed_weight_scale_cond".format(ear_index))
-    # d_pops[ear_index]=sim.Population(pop_size,sim.IF_cond_exp,d_stellate_params_cond,label="d_stellate".format(ear_index))
-    # t_pops[ear_index]=sim.Population(pop_size,sim.IF_cond_exp,t_stellate_params_cond,label="t_stellate_fixed_weight_scale_cond".format(ear_index))
-    # t_pops[ear_index]=sim.Population(pop_size,sim.IF_cond_exp,t_stellate_params_cond,label="t_stellate".format(ear_index))
-    # t_pops[ear_index]=sim.Population(pop_size,sim.extra_models.Izhikevich_cond,t_stellate_izk_class_2_params,label="t_stellate_fixed_weight_scale_cond{}".format(ear_index))
-    # t_pops[ear_index]=sim.Population(n_t,sim.extra_models.Izhikevich_cond,t_stellate_izk_class_2_params,label="t_stellate_fixed_weight_scale_cond{}".format(ear_index))
-    # t_pops[ear_index].set_constraint(MaxVertexAtomsConstraint(int(max_neurons_per_core*(float(n_t)/pop_size))))
     for td in range(n_tds):
         t_stellate_izk_class_2_params['d']=t_ds[td]
         t_pops[ear_index][td] = sim.Population(n_sub_t, sim.extra_models.Izhikevich_cond, t_stellate_izk_class_2_params,
                                            label="t_stellate_fixed_weight_scale_cond{}".format(ear_index))
-        t_pops[ear_index][td].set_constraint(MaxVertexAtomsConstraint(int(max_neurons_per_core * (float(n_t) / pop_size))))
+        # t_pops[ear_index][td].set_constraint(MaxVertexAtomsConstraint(int(max_neurons_per_core * (float(n_t) / pop_size))))
 
-    # b_pops[ear_index]=sim.Population(pop_size,sim.IF_cond_exp,bushy_params_cond,label="bushy".format(ear_index))
-    # b_pops[ear_index]=sim.Population(pop_size,sim.IF_cond_exp,bushy_params_cond,label="bushy_fixed_weight_scale_cond{}".format(ear_index))
     b_pops[ear_index]=sim.Population(n_b,sim.IF_cond_exp,bushy_params_cond,label="bushy_fixed_weight_scale_cond{}".format(ear_index))
-    b_pops[ear_index].set_constraint(MaxVertexAtomsConstraint(int(max_neurons_per_core*(float(n_b)/pop_size))))
+    # b_pops[ear_index].set_constraint(MaxVertexAtomsConstraint(int(max_neurons_per_core*(float(n_b)/pop_size))))
 
-    # o_pops[ear_index]=sim.Population(pop_size,sim.IF_cond_exp,octopus_params_cond,label="octopus_fixed_weight_scale_cond{}".format(ear_index))
-    # o_pops[ear_index]=sim.Population(pop_size,sim.IF_cond_exp,octopus_params_cond,label="octopus".format(ear_index))
-    # o_pops[ear_index]=sim.Population(pop_size,sim.extra_models.Izhikevich_cond,octopus_params_cond_izh,label="octopus_fixed_weight_scale_cond{}".format(ear_index))
     o_pops[ear_index]=sim.Population(n_o,sim.extra_models.Izhikevich_cond,octopus_params_cond_izh,label="octopus_fixed_weight_scale_cond{}".format(ear_index))
-    o_pops[ear_index].set_constraint(MaxVertexAtomsConstraint(int(max_neurons_per_core*(float(n_o)/pop_size))))
+    # o_pops[ear_index].set_constraint(MaxVertexAtomsConstraint(int(max_neurons_per_core*(float(n_o)/pop_size))))
 
-    # moc_pops[ear_index] = sim.Population(pop_size, sim.extra_models.Izhikevich_cond, IZH_EX_SUBCOR, label="moc_fixed_weight_scale_cond{}".format(ear_index))
-    # moc_pops[ear_index] = sim.Population(n_moc, sim.IF_cond_exp, bushy_params_cond, label="moc_fixed_weight_scale_cond{}".format(ear_index))
     moc_pops[ear_index] = sim.Population(n_moc, sim.extra_models.Izhikevich_cond, d_stellate_izk_class_1_params, label="moc_fixed_weight_scale_cond{}".format(ear_index))
 
     if 1:#record_en is True:
@@ -364,7 +296,6 @@ for ear_index in range(n_ears):
     #================================================================================================
     # AN --> CN Projections
     #================================================================================================
-    # conn_lists = np.load('./conn_lists_{}.npz'.format(n_fibres))
     w2s_t = 0.8#0.5#0.25#0.1#0.3#0.1#0.7
     n_an_t_connections = RandomDistribution('uniform',[4.,6.])
     av_an_t = w2s_t/5.
@@ -374,15 +305,19 @@ for ear_index in range(n_ears):
     if conn_pre_gen:
         an_t_list = connection_dicts[ear_index]['an_t_list']
     else:
-        an_t_master = normal_dist_connection_builder(number_of_inputs,n_t,RandomDistribution,conn_num=n_an_t_connections,dist=1.,sigma=1.
-                                                ,conn_weight=an_t_weight,normalised_space=pop_size)
+        an_t_master,max_dist = normal_dist_connection_builder(number_of_inputs,n_t,RandomDistribution,conn_num=n_an_t_connections,
+                                                dist=1.,sigma=1.,conn_weight=an_t_weight,normalised_space=pop_size,get_max_dist=True)
+        # t_incoming[ear_index].append(max_dist*n_an_t_connections.parameters['high'])
+        t_incoming[ear_index].append(max_dist*(float(number_of_inputs)/pop_size))
         an_t_list = [[]for _ in range(n_tds)]
         for (pre,post,w,d) in an_t_master:
             i = np.remainder(post, n_tds)
             an_t_list[i].append((pre, np.remainder(post, n_sub_t), w, d))
 
+
     for i,source_l in enumerate(an_t_list):
         an_t_projs[ear_index].append(sim.Projection(input_pops[ear_index],t_pops[ear_index][i],sim.FromListConnector(source_l),synapse_type=sim.StaticSynapse()))
+
 
     # n_an_d_connections = RandomDistribution('uniform',[11.,88.])
     n_an_d_connections = RandomDistribution('normal_clipped',[60.,5.,11.,88.])#estimation of upper and lower bounds Manis 2017
@@ -393,8 +328,10 @@ for ear_index in range(n_ears):
     if conn_pre_gen:
         an_d_list = connection_dicts[ear_index]['an_d_list']
     else:
-        an_d_list = normal_dist_connection_builder(number_of_inputs,n_d,RandomDistribution,conn_num=n_an_d_connections,dist=1.,
-                                           sigma=number_of_inputs/15.,conn_weight=an_d_weight,normalised_space=pop_size)
+        an_d_list,max_dist = normal_dist_connection_builder(number_of_inputs,n_d,RandomDistribution,conn_num=n_an_d_connections,dist=1.,
+                                           sigma=pop_size/15.,conn_weight=an_d_weight,normalised_space=pop_size,get_max_dist=True)
+        # d_incoming[ear_index].append(max_dist*n_an_d_connections.parameters['high'])
+        d_incoming[ear_index].append(max_dist*(float(number_of_inputs)/pop_size))
 
     an_d_projs[ear_index] = sim.Projection(input_pops[ear_index],d_pops[ear_index],sim.FromListConnector(an_d_list),synapse_type=sim.StaticSynapse())
 
@@ -405,13 +342,14 @@ for ear_index in range(n_ears):
     if conn_pre_gen:
         an_b_list = connection_dicts[ear_index]['an_b_list']
     else:
-        an_b_list = normal_dist_connection_builder(number_of_inputs,n_b,RandomDistribution,conn_num=n_an_b_connections,dist=1.,
-                                           sigma=1.,conn_weight=an_b_weight,normalised_space=pop_size)
+        an_b_list,max_dist = normal_dist_connection_builder(number_of_inputs,n_b,RandomDistribution,conn_num=n_an_b_connections,dist=1.,
+                                           sigma=1.,conn_weight=an_b_weight,normalised_space=pop_size,get_max_dist=True)
+        # b_incoming[ear_index].append(max_dist*n_an_b_connections.parameters['high'])
+        b_incoming[ear_index].append(max_dist*(float(number_of_inputs)/pop_size))
 
     an_b_projs[ear_index] = sim.Projection(input_pops[ear_index], b_pops[ear_index], sim.FromListConnector(an_b_list),
                                        synapse_type=sim.StaticSynapse())
     w2s_o = 3.#2.#7.
-    # w2s_o = 5.
     n_an_o_connections = RandomDistribution('uniform',[30.,120.])
     # n_an_o_connections = RandomDistribution('normal_clipped',[50.,5.,30.,120.])
     av_an_o = w2s_o/50.
@@ -419,10 +357,12 @@ for ear_index in range(n_ears):
     if conn_pre_gen:
         an_o_list = connection_dicts[ear_index]['an_o_list']
     else:
-        an_o_list = normal_dist_connection_builder(number_of_inputs, n_o, RandomDistribution,
+        an_o_list,max_dist = normal_dist_connection_builder(number_of_inputs, n_o, RandomDistribution,
                                                    conn_num=n_an_o_connections, dist=1.,
-                                                   sigma=pop_size/20., conn_weight=an_o_weight,normalised_space=pop_size)
-
+                                                   sigma=pop_size/20., conn_weight=an_o_weight,
+                                                   normalised_space=pop_size,get_max_dist=True)
+        # o_incoming[ear_index].append(max_dist*n_an_o_connections.parameters['high'])
+        o_incoming[ear_index].append(max_dist*(float(number_of_inputs)/pop_size))
     an_o_projs[ear_index] = sim.Projection(input_pops[ear_index], o_pops[ear_index], sim.FromListConnector(an_o_list),
                                            synapse_type=sim.StaticSynapse())
 
@@ -432,7 +372,7 @@ for ear_index in range(n_ears):
         connection_dicts[ear_index]['an_o_list']=an_o_list
         connection_dicts[ear_index]['an_b_list']=an_b_list
 
-#now all populations have been created we can create lateral projections
+#once all populations have been created we can create lateral projections
 #================================================================================================
 # Lateral CN Projections
 #================================================================================================
@@ -447,10 +387,9 @@ bushy_dendrite_size = 0.5
 n_stellate = n_d + n_t
 t_ratio = float(n_t)/n_stellate
 d_ratio = float(n_d)/n_stellate
-# b_ratio = float(n_b)/n_total
 
 t_t_n_conn = RandomDistribution('uniform',[0,max_n_lat_conn*stellate_dendrite_size*t_ratio])
-t_d_n_conn = RandomDistribution('uniform',[0,(max_n_lat_conn*stellate_dendrite_size*t_ratio)/n_tds])
+t_d_n_conn = RandomDistribution('uniform',[0,max_n_lat_conn*stellate_dendrite_size*t_ratio])
 d_t_n_conn = RandomDistribution('uniform',[0,max_n_lat_conn*stellate_dendrite_size*d_ratio])
 d_b_n_conn = RandomDistribution('uniform',[0,max_n_lat_conn*bushy_dendrite_size*d_ratio])
 
@@ -470,7 +409,11 @@ for ear_index in range(n_ears):
         if conn_pre_gen:
             t_t_list = connection_dicts[ear_index]['t_t_list']
         else:
-            t_t_master=normal_dist_connection_builder(n_t,n_t,RandomDistribution,conn_num=t_t_n_conn,dist=1.,sigma=t_lat_sigma,conn_weight=lat_t_weight,normalised_space=pop_size)
+            t_t_master,max_dist=normal_dist_connection_builder(n_t,n_t,RandomDistribution,conn_num=t_t_n_conn,dist=1.,
+                                                               sigma=t_lat_sigma,conn_weight=lat_t_weight,normalised_space=pop_size,
+                                                               get_max_dist=True)
+            # t_incoming[ear_index].append(max_dist*t_t_n_conn.parameters['high'])
+            t_incoming[ear_index].append(max_dist*(float(n_t)/pop_size))
             t_t_list = [[[] for _ in range(n_tds)] for __ in range(n_tds)]
             for (pre,post,w,d) in t_t_master:
                 i = np.remainder(pre,n_tds)
@@ -484,8 +427,10 @@ for ear_index in range(n_ears):
         if conn_pre_gen:
             t_d_list = connection_dicts[ear_index]['t_d_list']
         else:
-            t_d_master= normal_dist_connection_builder(n_t, n_d, RandomDistribution, conn_num=t_d_n_conn, dist=1.,
-                                               sigma=d_lat_sigma, conn_weight=lat_d_weight, normalised_space=pop_size)
+            t_d_master,max_dist= normal_dist_connection_builder(n_t, n_d, RandomDistribution, conn_num=t_d_n_conn, dist=1.,
+                                               sigma=d_lat_sigma, conn_weight=lat_d_weight, normalised_space=pop_size,get_max_dist=True)
+            # d_incoming[ear_index].append(max_dist*t_d_n_conn.parameters['high'])
+            d_incoming[ear_index].append(max_dist*(float(n_t)/pop_size))
             t_d_list = [[]for _ in range(n_tds)]
             for (pre,post,w,d) in t_d_master:
                 i = np.remainder(pre,n_tds)
@@ -497,7 +442,11 @@ for ear_index in range(n_ears):
         if conn_pre_gen:
             d_t_list = connection_dicts[ear_index]['d_t_list']
         else:
-            d_t_master = normal_dist_connection_builder(n_d,n_t,RandomDistribution,conn_num=d_t_n_conn,dist=1.,sigma=t_lat_sigma,conn_weight=lat_t_weight,normalised_space=pop_size)
+            d_t_master,max_dist = normal_dist_connection_builder(n_d,n_t,RandomDistribution,conn_num=d_t_n_conn,dist=1.,
+                                                                 sigma=t_lat_sigma,conn_weight=lat_t_weight,
+                                                                 normalised_space=pop_size,get_max_dist=True)
+            # t_incoming[ear_index].append(max_dist*d_t_n_conn.parameters['high'])
+            t_incoming[ear_index].append(max_dist*(float(n_d)/pop_size))
             d_t_list = [[] for _ in range(n_tds)]
             for (pre, post, w, d) in d_t_master:
                 i = np.remainder(post, n_tds)
@@ -511,7 +460,11 @@ for ear_index in range(n_ears):
         if conn_pre_gen:
             d_b_list = connection_dicts[ear_index]['d_b_list']
         else:
-            d_b_list = normal_dist_connection_builder(n_d,n_b,RandomDistribution,conn_num=d_b_n_conn,dist=1.,sigma=b_lat_sigma,conn_weight=lat_b_weight,normalised_space=pop_size)
+            d_b_list,max_dist = normal_dist_connection_builder(n_d,n_b,RandomDistribution,conn_num=d_b_n_conn,dist=1.,
+                                                      sigma=b_lat_sigma,conn_weight=lat_b_weight,
+                                                      normalised_space=pop_size,get_max_dist=True)
+            # b_incoming[ear_index].append(max_dist*d_b_n_conn.parameters['high'])
+            b_incoming[ear_index].append(max_dist*(float(n_d)/pop_size))
         d_b_projs[ear_index] = sim.Projection(d_pops[ear_index],b_pops[ear_index],sim.FromListConnector(d_b_list),synapse_type=sim.StaticSynapse(),receptor_type='inhibitory')
 
         if conn_pre_gen is False:
@@ -519,14 +472,18 @@ for ear_index in range(n_ears):
             connection_dicts[ear_index]['t_d_list'] = t_d_list
             connection_dicts[ear_index]['d_t_list'] = d_t_list
             connection_dicts[ear_index]['d_b_list'] = d_b_list
-    #TODO: verify contralateral d->tc and d->dc projection stats
+    #TODO: verify contralateral d->tc
     if n_ears>1:
         contra_ear_index = n_ears - 1 - ear_index
         if lateral is True:
             if conn_pre_gen:
                 d_tc_list = connection_dicts[ear_index]['d_tc_list']
             else:
-                d_tc_master = normal_dist_connection_builder(n_d,n_t,RandomDistribution,conn_num=d_t_n_conn,dist=1.,sigma=t_lat_sigma,conn_weight=lat_t_weight,normalised_space=pop_size)
+                d_tc_master,max_dist = normal_dist_connection_builder(n_d,n_t,RandomDistribution,conn_num=d_t_n_conn,dist=1.,
+                                                             sigma=t_lat_sigma,conn_weight=lat_t_weight,
+                                                             normalised_space=pop_size,get_max_dist=True)
+                # t_incoming[contra_ear_index].append(max_dist*d_t_n_conn.parameters['high'])
+                t_incoming[contra_ear_index].append(max_dist*(float(n_d)/pop_size))
                 d_tc_list = [[] for _ in range(n_tds)]
                 for (pre,post,w,d) in d_tc_master:
                     i = np.remainder(post, n_tds)
@@ -548,9 +505,11 @@ for ear_index in range(n_ears):
         if conn_pre_gen:
             t_mocc_list = connection_dicts[ear_index]['t_mocc_list']
         else:
-            t_mocc_master = normal_dist_connection_builder(n_t, n_moc, RandomDistribution,
-                                                             conn_num=n_t_moc_connections, dist=1.,sigma= float(n_t)/n_moc,
-                                                             conn_weight=t_moc_weight)
+            t_mocc_master,max_dist = normal_dist_connection_builder(n_t, n_moc, RandomDistribution,
+                                                             conn_num=n_t_moc_connections, dist=1.,sigma= float(pop_size)/n_moc,
+                                                             conn_weight=t_moc_weight,get_max_dist=True,normalised_space=pop_size)
+            # moc_incoming[contra_ear_index].append(max_dist*n_t_moc_connections.parameters['high'])
+            moc_incoming[contra_ear_index].append(max_dist*(float(n_t)/pop_size))
             t_mocc_list = [[] for _ in range(n_tds)]
             for (pre,post,w,d) in t_mocc_master:
                 i = np.remainder(post, n_tds)
@@ -592,9 +551,40 @@ for ear_index in range(n_ears):
                                                  sim.FromListConnector(moc_anc_list),
                                                  synapse_type=sim.StaticSynapse())
 
+
 if conn_pre_gen is False and lateral is True:
+    #todo: save all the calculated population max atom constraints
+    max_atoms = {}
+    max_atoms['d'] = np.asarray(1./(np.sum(d_incoming,axis=1) * max_dist_to_n_atoms_per_core_const),dtype=int)
+    max_atoms['t'] = np.asarray(1./(np.sum(t_incoming,axis=1) * max_dist_to_n_atoms_per_core_const),dtype=int)
+    max_atoms['b'] = np.asarray(1./(np.sum(b_incoming,axis=1) * max_dist_to_n_atoms_per_core_const),dtype=int)
+    max_atoms['o'] = np.asarray(1./(np.sum(o_incoming,axis=1) * max_dist_to_n_atoms_per_core_const),dtype=int)
+    max_atoms['moc'] = np.asarray(1./(np.sum(moc_incoming,axis=1) * max_dist_to_n_atoms_per_core_const),dtype=int)
     np.savez_compressed(input_directory + '/cn_{}an_fibres_{}ears_connectivity.npz'.format
-    (n_fibres, n_ears),connection_dicts=connection_dicts)
+    (n_fibres, n_ears),connection_dicts=connection_dicts,max_atoms=max_atoms)
+
+else:
+    max_atoms = connection_dicts_file['max_atoms']
+
+pop_list = ['d','t','b','o','moc']
+pop_dict = {
+        'd':d_pops,
+        't':t_pops,
+        'b':b_pops,
+        'o':o_pops,
+        'moc':moc_pops
+}
+for pop in pop_list:
+    for ear_index, max_a in enumerate(max_atoms[pop]):
+        if max_a>max_neurons_per_core:
+            max_a = max_neurons_per_core
+        if pop == 't':
+            for i in range(n_tds):
+                pop_dict[pop][ear_index][i].set_constraint(MaxVertexAtomsConstraint(max_a))
+        else:
+            pop_dict[pop][ear_index].set_constraint(MaxVertexAtomsConstraint(max_a))
+# for ear_index in range(n_ears):
+#     pop_dict['d'][ear_index].set_constraint(MaxVertexAtomsConstraint(200))
 
 max_period = 6000.
 num_recordings =1#int((duration/max_period)+1)
