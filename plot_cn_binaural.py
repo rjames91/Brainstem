@@ -6,40 +6,38 @@ from signal_prep import *
 from scipy.io import savemat, loadmat
 from elephant.statistics import isi,cv
 
-n_fibres = 300
-duration = 2#3
-n_total = int(6.66 * n_fibres)
+plot_spikes = True
+plot_moc = True
+plot_isi = False
+plot_psth = False
 # n_total = int(2. * n_fibres)
 # Open the results
 results_directory = '/home/rjames/Dropbox (The University of Manchester)/EarProject/Pattern_recognition/spike_trains/IC_spikes'
-# results_file = "/cn_timit_3s_{}an_fibres_1.0ms_timestep_255_128percore.npz".format(n_fibres)
-# results_file = "/cn_timit_{}s_{}an_fibres_1.0ms_timestep_filtered_edges_255_128percore_n_total60000.0.npz".format(duration,n_fibres)
-# results_file = "/cn_timit_{}s_{}an_fibres_1.0ms_timestep_filtered_edges_255_255percore_tx_offset_n_total{}.npz".format(duration,n_fibres,n_total)
-# results_file = "/cn_yes_2s_{}an_fibres_1.0ms_timestep_filtered_edges.npz".format(n_fibres)
-# results_file = "/cn_timit_2s_300an_fibres_1.0ms_timestep_filtered_edges.npz"
-# results_file = "/cn_tone_1_26s_3000an_fibres_0.1ms_timestep_filtered_edges_255_255percore_tx_offset_n_total19980_ts200.npz"
-results_file = "/cn_tone_1000Hz_stereo_0s_1000an_fibres_0.1ms_timestep_65dB_0s_d_200_moc_True_lat_True.npz"
-# ear_results_file = "/spinnakear_timit_{}s_30dB_{}fibres.npz".format(duration,n_fibres)
-# ear_results_file = "/spinnakear_timit_{}s_30dB_{}fibres.npz".format(duration,n_fibres)
-# # ear_results_file = "/spinnakear_yes_2s_30dB_{}fibres.npz".format(n_fibres)
-# ear_results_data = np.load(results_directory+ear_results_file)
-# binaural_audio_data = ear_results_data['audio_data']
-# binaural_scaled_times = ear_results_data['scaled_times']
-# if binaural_scaled_times.shape[0]>1:
-#     n_ears =2
-# else:
-#     n_ears = 1
+test_index = 11
+# results_file = "/cn_chirp_0s_1000an_fibres_0.1ms_timestep_65dB_1s_moc_True_lat_True.npz"
+# results_file = "/cn_timit_0s_1000an_fibres_0.1ms_timestep_65dB_2s_moc_True_lat_True_{}.npz".format(test_index)
+# results_file = "/cn_tone_1000Hz_stereo_0s_1000an_fibres_0.1ms_timestep_100dB_0s_moc_True_lat_True.npz"
+# results_file = "/cn_tone_1000Hz_stereo_0s_1000an_fibres_0.1ms_timestep_100dB_0s_moc_True_lat_False.npz"
+results_file = "/cn_tone_1000Hz_stereo_0s_100an_fibres_0.1ms_timestep_65dB_0s_moc_True_lat_True_{}.npz".format(test_index)
 n_ears = 2
 
 # duration = binaural_audio_data[0].size/Fs
-duration = 0.5
+duration = 0.45
 results_data = np.load(results_directory+results_file)
 Fs = results_data['Fs']
-t_spikes = results_data['t_spikes']
-d_spikes = results_data['d_spikes']
+t_spikes_split = results_data['t_spikes']
+t_spikes_combined =[]
+for ear_index in range(len(t_spikes_split)):
+    t_spikes_combined.append([val for tup in zip(*t_spikes_split[ear_index]) for val in tup])
+d_spikes_split = results_data['d_spikes']
+d_spikes_combined =[]
+for ear_index in range(len(d_spikes_split)):
+    d_spikes_combined.append([val for tup in zip(*d_spikes_split[ear_index]) for val in tup])
 b_spikes = results_data['b_spikes']
 o_spikes = results_data['o_spikes']
+moc_spikes = results_data['moc_spikes']
 an_spikes = results_data['an_spikes']
+moc_att = results_data['moc_att']
 
 # left_t_spike_trains = [spike_train for spike_train in t_spikes[0] if len(spike_train)>0]
 # half_point = len(left_t_spike_trains)/2
@@ -60,33 +58,59 @@ an_spikes = results_data['an_spikes']
 # axs[0].hist(all_isi)
 # # axs[0].xlim((0,20))
 # axs[0].set_title("ISI left")
+n_tds = 10
+t_ds = np.logspace(np.log10(2),np.log10(200),n_tds)
+n_dds = 10
+d_ds = np.logspace(np.log10(2),np.log10(15),n_dds)
 
 for ear_index in range(n_ears):
-    neuron_title_list = ['t_stellate', 'd_stellate', 'bushy', 'octopus','an']
-    neuron_list = [t_spikes, d_spikes, b_spikes, o_spikes,an_spikes]
+    neuron_title_list = ['t_stellate','d_stellate', 'bushy', 'octopus','moc','an']
+    # neuron_list = [t_spikes_combined,d_spikes_combined, b_spikes, o_spikes,moc_spikes,an_spikes]
+    neuron_list = [moc_spikes]
+    # neuron_title_list = ["T stellate d = " + str(td) for td in t_ds]
+    # neuron_list = t_spikes_split[ear_index]
+    # neuron_title_list = ["D stellate d = " + str(dd) for dd in d_ds]
+    # neuron_list = d_spikes_split[ear_index]
 
     for i, neuron_times in enumerate(neuron_list):
-        # plt.figure("spikes ear{}".format(ear_index))
-        non_zero_neuron_times = neuron_times[ear_index]#[spikes for spikes in neuron_times[ear_index] if len(spikes)>0]#
-        # spike_raster_plot_8(non_zero_neuron_times, plt, duration, len(non_zero_neuron_times) + 1, 0.001,
-        #                     title=neuron_title_list[i], markersize=1, subplots=(len(neuron_list), 1, i + 1)
-        #                     )  # ,filepath=results_directory)
-        # plt.figure("psth ear{}".format(ear_index))
+        non_zero_neuron_times = neuron_times[ear_index]
         mid_point = int(len(non_zero_neuron_times)/2.)
         psth_spikes = non_zero_neuron_times[mid_point-10:mid_point+10]
-        # psth_plot_8(plt, numpy.arange(len(psth_spikes)), psth_spikes, bin_width=0.25 / 1000.,
-        #             duration=duration,title=neuron_title_list[i],subplots=(len(neuron_list), 1, i + 1))
-        plt.figure("isi ear{}".format(ear_index))
-        t_isi = [isi(spike_train) for spike_train in psth_spikes]
-        hist_isi = []
-        for neuron in t_isi:
-            for interval in neuron:
-                if interval.item()<20:
-                    hist_isi.append(interval.item())
-        plt.subplot(len(neuron_list), 1, i + 1)
-        plt.hist(hist_isi)
-        plt.xlim((0,20))
-        plt.ylim((0,100))
+
+        if plot_spikes:
+            plt.figure("spikes ear{} test {}".format(ear_index,test_index))
+            # non_zero_neuron_times = neuron_times
+            spike_raster_plot_8(non_zero_neuron_times, plt, duration, len(non_zero_neuron_times) + 1, 0.001,
+                                title=neuron_title_list[i], markersize=1, subplots=(len(neuron_list), 1, i + 1)
+                                )  # ,filepath=results_directory)
+        if plot_psth:
+            plt.figure("psth ear{}".format(ear_index))
+            # psth_spikes = [non_zero_neuron_times[mid_point]]
+            psth_plot_8(plt, numpy.arange(len(psth_spikes)), psth_spikes, bin_width=0.25 / 1000.,
+                        duration=duration,title=neuron_title_list[i],subplots=(len(neuron_list), 1, i + 1))
+        if plot_isi:
+            plt.figure("isi ear{}".format(ear_index))
+            t_isi = [isi(spike_train) for spike_train in psth_spikes]
+            hist_isi = []
+            for neuron in t_isi:
+                for interval in neuron:
+                    if interval.item()<20:
+                        hist_isi.append(interval.item())
+            plt.subplot(len(neuron_list), 1, i + 1)
+            plt.hist(hist_isi)
+            # plt.xlim((0,20))
+            # plt.ylim((0,100))
+
+    if plot_moc:
+        plt.figure("moc ear {} test {}".format(ear_index,test_index))
+
+        for i,moc in enumerate(moc_att[ear_index]):
+            if moc.min()==1:
+                print "test {} ear {} channel {}".format(test_index,ear_index,i)
+            t = np.linspace(0,duration*1000.,len(moc))
+            plt.plot(t,moc)
+        plt.ylabel("MOC attenuation")
+        plt.xlabel("time (ms)")
 
 plt.show()
 
@@ -106,7 +130,7 @@ population_size_dict = {'t_stellate':n_t,
 pop_size = max([n_fibres,n_d,n_t,n_b,n_o])
 # pop_size = max([n_fibres,n_o])
 neuron_title_list = ['t_stellate','d_stellate','bushy','octopus']
-neuron_list = [t_spikes,d_spikes,b_spikes,o_spikes]
+neuron_list = [t_spikes]#,d_spikes,b_spikes,o_spikes]
 # neuron_title_list = ['octopus']
 # neuron_list = [o_spikes]
 ear_list = ['left','right']
