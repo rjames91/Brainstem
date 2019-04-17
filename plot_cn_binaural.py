@@ -9,21 +9,22 @@ from elephant.statistics import isi,cv
 plot_spikes = True
 plot_moc = True
 plot_isi = False
-plot_psth = True
+plot_psth = False
 # n_total = int(2. * n_fibres)
 # Open the results
 results_directory = '/home/rjames/Dropbox (The University of Manchester)/EarProject/Pattern_recognition/spike_trains/IC_spikes'
-test_index = 5
+test_index = 4
 # results_file = "/cn_chirp_0s_1000an_fibres_0.1ms_timestep_65dB_1s_moc_True_lat_True_{}.npz".format(test_index)
 # results_file = "/cn_timit_0s_1000an_fibres_0.1ms_timestep_65dB_2s_moc_True_lat_True_{}.npz".format(test_index)
-# results_file = "/cn_timit_0s_1000an_fibres_0.1ms_timestep_65dB_2s_moc_True_lat_True.npz"
-# results_file = "/cn_tone_1000Hz_stereo_0s_1000an_fibres_0.1ms_timestep_100dB_0s_moc_True_lat_True.npz"
+# results_file = "/cn_timit_0s_1000an_fibres_0.1ms_timestep_65dB_2s_moc_True_lat_True_1.npz"
+results_file = "/cn_tone_1000Hz_stereo_0s_1000an_fibres_0.1ms_timestep_65dB_0s_moc_True_lat_True.npz"
 # results_file = "/cn_tone_1000Hz_stereo_0s_1000an_fibres_0.1ms_timestep_100dB_0s_moc_True_lat_False.npz"
-results_file = "/cn_tone_1000Hz_stereo_0s_1000an_fibres_0.1ms_timestep_65dB_0s_moc_True_lat_True_{}.npz".format(test_index)
+# results_file = "/cn_tone_1000Hz_stereo_0s_1000an_fibres_0.1ms_timestep_65dB_0s_moc_True_lat_True_{}.npz".format(test_index)
+# results_file = "/cn_tone_1000Hz_stereo_0s_3000an_fibres_0.1ms_timestep_65dB_0s_moc_True_lat_True.npz"
 n_ears = 2
 
 # duration = binaural_audio_data[0].size/Fs
-duration = 1.#0.45
+duration = 0.25#1.#2.45#
 results_data = np.load(results_directory+results_file)
 Fs = results_data['Fs']
 t_spikes_split = results_data['t_spikes']
@@ -77,7 +78,10 @@ for ear_index in range(n_ears):
         non_zero_neuron_times = neuron_times[ear_index]
         # non_zero_neuron_times = neuron_times
         mid_point = int(len(non_zero_neuron_times)/2.)
-        psth_spikes = non_zero_neuron_times[mid_point-10:mid_point+10]
+        psth_spikes = non_zero_neuron_times[:]
+        # psth_spikes = non_zero_neuron_times[mid_point-10:mid_point+10]
+        # psth_spikes = [non_zero_neuron_times[mid_point]]
+
 
         if plot_spikes:
             plt.figure("spikes ear{} test {}".format(ear_index,test_index))
@@ -86,7 +90,6 @@ for ear_index in range(n_ears):
                                 )  # ,filepath=results_directory)
         if plot_psth:
             plt.figure("psth ear{}".format(ear_index))
-            # psth_spikes = [non_zero_neuron_times[mid_point]]
             psth_plot_8(plt, numpy.arange(len(psth_spikes)), psth_spikes, bin_width=0.25 / 1000.,
                         duration=duration,title=neuron_title_list[i],subplots=(len(neuron_list), 1, i + 1))
         if plot_isi:
@@ -105,11 +108,12 @@ for ear_index in range(n_ears):
     if plot_moc:
         plt.figure("moc ear {} test {}".format(ear_index,test_index))
 
-        for i,moc in enumerate(moc_att[ear_index][::3]):
+        for i,moc in enumerate(moc_att[ear_index][::1]):
             if moc.min()==1:
                 print "test {} ear {} channel {}".format(test_index,ear_index,i)
-            t = np.linspace(0,duration*1000.,len(moc))
-            plt.plot(t,moc)
+            if 1:#moc.min()<0.9:
+                t = np.linspace(0,duration*1000.,len(moc))
+                plt.plot(t,moc)
         plt.ylabel("MOC attenuation")
         plt.xlabel("time (ms)")
 
