@@ -37,32 +37,20 @@ bushy_params_cond = {#'cm': 5.,#57.,  # nF Only 200 cells in mouse CN
                'v_thresh': -40.
                }
 
-# t_d = 2#100,#400,#220,#12,#vary between 12 and 220 for CRs 100-500Hz
 n_tds = 10
-t_ds = np.logspace(np.log10(2),np.log10(200),n_tds)
+t_ds = np.logspace(np.log10(10),np.log10(500),n_tds)
 t_stellate_izk_class_2_params = {
-               'a':0.5,#0.02,#0.2,
+               'a':0.4,#0.2,#0.02,#
                'b':0.26,
                'c':-65,
-               #'d':None,
+               # 'd':200,
                'u':0,#-15,
-               'tau_syn_E': 0.94,#3.0,#2.5,#
+               'tau_syn_E': 0.94,#3.0,#
                'tau_syn_I': 4.0,#2.5,#
                'v': -63.0,
 }
-d_stellate_izk_class_2_params = {
-               'a':0.2,
-               'b':0.26,
-               'c':-65,
-               'd':0,
-               'u':-15,
-               'tau_syn_E':4.88,
-               'e_rev_E': -30.,
-               'tau_syn_I':4.,
-               'v': -63.0,
-}
 n_dds = 10
-d_ds = np.logspace(np.log10(2),np.log10(16),n_dds)
+d_ds = np.logspace(np.log10(4),np.log10(16),n_dds)
 d_stellate_izk_class_1_params = {
                'a':0.02,
                'b':-0.1,
@@ -75,17 +63,6 @@ d_stellate_izk_class_1_params = {
                'v': -63.0,
 }
 
-moc_class_2_params = {
-    'a': 0.2,
-    'b': 0.26,
-    'c': -65,
-    'd': 0,
-    'u': -15,
-    'v': -65,
-    'tau_syn_E':1.,
-}
-
-
 conn_pre_gen = True
 lateral = True
 moc_feedback = True
@@ -93,26 +70,26 @@ record_en = True
 auto_max_atoms = False
 
 Fs = 50e3#100000.#
-dBSPL=65#100#30#
+dBSPL=65#80#-60#30#
 wav_directory = '/home/rjames/SpiNNaker_devel/OME_SpiNN/'
 input_directory = '/home/rjames/Dropbox (The University of Manchester)/EarProject/Pattern_recognition/spike_trains/IC_spikes'
 
 freq = 1000
 tone_duration = 0.05
-silence_duration = 0.1 #0.075#
+silence_duration = 0.025 #0.075#
 tone = generate_signal(freq=freq,dBSPL=dBSPL,duration=tone_duration,
                        modulation_freq=0.,fs=Fs,ramp_duration=0.005,plt=None,silence=True,silence_duration=silence_duration)
-tone_r = generate_signal(freq=freq,dBSPL=dBSPL-10,duration=tone_duration,
+tone_r = generate_signal(freq=freq,dBSPL=dBSPL,duration=tone_duration,
                        modulation_freq=0.,fs=Fs,ramp_duration=0.005,plt=None,silence=True,silence_duration=silence_duration)
 tone_stereo = np.asarray([tone,tone_r])
 
 timit_l = generate_signal(signal_type='file',dBSPL=dBSPL+20,fs=Fs,ramp_duration=0.0025,silence=True,
-                            file_name=wav_directory+'10788.wav',plt=None,channel=0)
-[_,signal] = wavfile.read(wav_directory+'10788.wav')
+                            file_name=wav_directory+'10788_edit.wav',plt=None,channel=0)
+[_,signal] = wavfile.read(wav_directory+'10788_edit.wav')
 signal = signal[:,0]
 max_val = numpy.max(numpy.abs(signal))
 timit_r = generate_signal(signal_type='file',dBSPL=dBSPL,fs=Fs,ramp_duration=0.0025,silence=True,
-                            file_name=wav_directory+'10788.wav',plt=None,channel=1,max_val=max_val)
+                            file_name=wav_directory+'10788_edit.wav',plt=None,channel=1,max_val=max_val)
 timit = numpy.asarray([timit_l,timit_r])
 
 noise_dur = timit_l.size / Fs
@@ -133,11 +110,11 @@ sounds_dict = {
                 "click":click_stereo,
                 "chirp":chirp_stereo
 }
-n_fibres = 1000
+n_fibres = 30000
 timestep = 0.1#1.0#
-required_total_time = 0.0002#0.5#2.#50.#tone_duration#
+required_total_time = 0.0002#20#20#0.1#50.#tone_duration#
 
-stimulus_list = ["tone_{}Hz_stereo".format(freq)]#['timit']#['chirp']#["click"]#
+stimulus_list = ['timit']#["tone_{}Hz_stereo".format(freq)]#['chirp']#["click"]#
 duration_dict = {}
 test_file = ''
 for stim_string in stimulus_list:
@@ -189,7 +166,8 @@ while 1:
 
 max_time = 1000. * (len(audio_data[0]) / Fs)
 
-duration = max_time
+duration = max_time * 1.1
+print "simulation real time = {}s".format(duration*0.001)
 # duration = 1000.
 n_ears = num_channels
 
@@ -245,7 +223,8 @@ else:
 #================================================================================================
 # SpiNNaker setup
 #================================================================================================
-n_total = int(6.66 * n_fibres)
+# n_total = int(6.66 * n_fibres)
+n_total = int(2.4 * n_fibres)
 #ratios taken from campagnola & manis 2014 mouse
 n_t = int(n_total * 2./3 * 24./89)
 n_d = int(n_total * 1./3 * 24./89)
@@ -296,14 +275,14 @@ for ear_index in range(n_ears):
     b_pops[ear_index]=sim.Population(n_b,sim.IF_cond_exp,bushy_params_cond,label="bushy_fixed_weight_scale_cond{}".format(ear_index))
 
     o_pops[ear_index]=sim.Population(n_o,sim.extra_models.Izhikevich_cond,octopus_params_cond_izh,label="octopus_fixed_weight_scale_cond{}".format(ear_index))
-    # d_stellate_izk_class_1_params['d'] = 6.
-    moc_pops[ear_index] = sim.Population(n_moc, sim.extra_models.Izhikevich_cond, moc_class_2_params, label="moc_fixed_weight_scale_cond{}".format(ear_index))
+    # moc_pops[ear_index] = sim.Population(n_moc, sim.extra_models.Izhikevich_cond, moc_rs_params, label="moc_fixed_weight_scale_cond{}".format(ear_index))
+    moc_pops[ear_index] = sim.Population(n_moc, sim.IF_cond_exp, {'tau_syn_E': 2.}, label="moc_fixed_weight_scale_cond{}".format(ear_index))
 
     if 1:#record_en is True:
-        b_pops[ear_index].record(["spikes"])
+        #b_pops[ear_index].record(["spikes"])
         for pop in t_pops[ear_index]:
             pop.record(["spikes"])
-        o_pops[ear_index].record(["spikes"])
+        #o_pops[ear_index].record(["spikes"])
         moc_pops[ear_index].record(["spikes"])
         for pop in d_pops[ear_index]:
             pop.record(["spikes"])
@@ -311,7 +290,7 @@ for ear_index in range(n_ears):
     #================================================================================================
     # AN --> CN Projections
     #================================================================================================
-    w2s_t = 0.8#0.5#0.25#0.1#0.3#0.1#0.7
+    w2s_t = 1.6#0.8#0.5#0.25#0.1#0.3#0.1#0.7
     n_an_t_connections = RandomDistribution('uniform',[4.,6.])
     av_an_t = w2s_t/5.
     # an_t_weight = RandomDistribution('uniform',[0,av_an_t*2])
@@ -528,9 +507,9 @@ for ear_index in range(n_ears):
         # ================================================================================================
         # CN --> VNTB Projections
         # ================================================================================================
-        w2s_moc = 0.75
+        w2s_moc = 0.1#0.05#0.75
         # n_t_moc_connections = RandomDistribution('uniform', [5, 10])
-        av_t_moc_connections = int(np.ceil(float(n_t)/n_moc))
+        av_t_moc_connections = 10#int(np.ceil(float(n_t)/n_moc))
         n_t_moc_connections = RandomDistribution('normal_clipped',
                                                   [av_t_moc_connections, 0.1 * av_t_moc_connections, 0,
                                                    av_t_moc_connections * 2.])
@@ -556,9 +535,9 @@ for ear_index in range(n_ears):
                                                  sim.FromListConnector(t_mocc_l),synapse_type=sim.StaticSynapse())
         #ipsilateral moc
         n_ohcs = int(number_of_inputs/10.)
-        # av_n_moc_connections = 4.5#10#int(np.ceil(float(n_ohcs)/n_moc))
-        n_moc_an_connections = 5
-        # n_moc_an_connections = RandomDistribution('normal_clipped', [av_n_moc_connections, 0.1 * av_n_moc_connections, 0, av_n_moc_connections * 2.])
+        av_n_moc_connections = 5#10#int(np.ceil(float(n_ohcs)/n_moc))
+        n_moc_an_connections = RandomDistribution('normal_clipped', [av_n_moc_connections, 0.1 * av_n_moc_connections, 0, av_n_moc_connections * 2.])
+        # n_moc_an_connections = 5
         # n_moc_an_connections = RandomDistribution('uniform', [5, 10])
         moc_an_weight = 1.
         uncrossed_sigma = math.sqrt(n_moc/10.)#1 octave of full range
@@ -669,10 +648,10 @@ if record_en is True:
         # mem_v = d_data.segments[0].filter(name='v')
         # cell_voltage_plot_8(mem_v, plt, duration/timestep, [],scale_factor=timestep/1000.,
         #                     title='d stellate pop ear{}'.format(ear_index),id=range(n_d))
-        b_data = b_pops[ear_index].get_data(["spikes"])
-        b_spikes[ear_index] = b_data.segments[0].spiketrains
-        o_data = o_pops[ear_index].get_data(["spikes"])
-        o_spikes[ear_index] = o_data.segments[0].spiketrains
+        # b_data = b_pops[ear_index].get_data(["spikes"])
+        # b_spikes[ear_index] = b_data.segments[0].spiketrains
+        # o_data = o_pops[ear_index].get_data(["spikes"])
+        # o_spikes[ear_index] = o_data.segments[0].spiketrains
         moc_data = moc_pops[ear_index].get_data(["spikes"])
         moc_spikes[ear_index] = moc_data.segments[0].spiketrains
         #

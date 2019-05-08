@@ -9,6 +9,7 @@ import time as local_time
 from spinnak_ear.spinnakear import SpiNNakEar,naive_n_chips_calc
 from pacman.model.constraints.partitioner_constraints.max_vertex_atoms_constraint import MaxVertexAtomsConstraint
 from elephant.statistics import isi,cv
+import math
 
 #================================================================================================
 # Simulation parameters
@@ -145,6 +146,8 @@ noise_r = generate_signal(signal_type='noise',dBSPL=dBSPL-10,duration=0.1,
                        modulation_freq=0.,modulation_depth=0.5,fs=Fs,ramp_duration=0.005,plt=None,silence=True,silence_duration=0.075)
 noise_stereo = np.asarray([noise,noise_r])
 
+
+
 sounds_dict = {
                 "tone_{}Hz".format(freq):tone,
                 "tone_{}Hz_stereo".format(freq):tone_stereo,
@@ -264,6 +267,10 @@ sim.setup(timestep=timestep,n_chips_required=n_chips_required)
 sim.set_number_of_neurons_per_core(sim.IF_cond_exp,255)
 sim.set_number_of_neurons_per_core(sim.extra_models.Izhikevich_cond,255)
 
+# for ear_index in range(n_ears):
+#     spinnakear_param_file = input_directory+'/spinnakear_params_ear{}_{}fibres.npz'.format(ear_index,n_fibres)
+#     input_pops[ear_index]=sim.Population(number_of_inputs,SpiNNakEar(audio_input=audio_data[ear_index],fs=Fs,n_channels=number_of_inputs/10,param_file=spinnakear_param_file,ear_index=ear_index),label="AN_Pop_ear{}".format(ear_index))
+#     input_pops[ear_index].record(['spikes','moc'])
 for ear_index in range(n_ears):
     #================================================================================================
     # Build Populations
@@ -274,7 +281,7 @@ for ear_index in range(n_ears):
     else:
         an_spatial = True
 
-    spinnakear_param_file = input_directory+'/spinnakear_params_ear{}_{}fibres.npz'.format(ear_index,n_fibres)
+    spinnakear_param_file = None#input_directory+'/spinnakear_params_ear{}_{}fibres.npz'.format(ear_index,n_fibres)
     input_pops[ear_index]=sim.Population(number_of_inputs,SpiNNakEar(audio_input=audio_data[ear_index],fs=Fs,n_channels=number_of_inputs/10,param_file=spinnakear_param_file,ear_index=ear_index),label="AN_Pop_ear{}".format(ear_index))
     input_pops[ear_index].record(['spikes','moc'])
 
@@ -423,20 +430,24 @@ if lateral is True:
                                                      synapse_type=sim.StaticSynapse())
 	    
             #ipsilateral moc
-            av_n_moc_connections = int(np.ceil((number_of_inputs/10)/n_moc))
-            n_moc_an_connections = RandomDistribution('normal_clipped', [av_n_moc_connections, 0.1 * av_n_moc_connections, 0, av_n_moc_connections * 2.])
+            av_n_moc_connections = int(np.ceil((number_of_inputs/10.)/n_moc))
+            n_moc_an_connections = 1#RandomDistribution('normal_clipped', [av_n_moc_connections, 0.1 * av_n_moc_connections, 0, av_n_moc_connections * 2.])
             n_ohcs = int(number_of_inputs/10.)
             # n_moc_an_connections = RandomDistribution('uniform', [5, 10])
             moc_an_weight = 1.
-            uncrossed_sigma = n_ohcs/10.#1 octave of full range
+            # uncrossed_sigma = math.sqrt(n_ohcs/10.)#1 octave of full range
+            uncrossed_sigma = math.sqrt(n_moc/10.)#1 octave of full range
             if conn_pre_gen:
                 moc_an_list = connection_dicts[ear_index]['moc_an_list']
             else:
-                moc_an_list = normal_dist_connection_builder(n_ohcs,n_moc, RandomDistribution,
+                # moc_an_list = normal_dist_connection_builder(n_ohcs,n_moc, RandomDistribution,
+                #                                                      conn_num=n_moc_an_connections, dist=1.,
+                #                                                      sigma=uncrossed_sigma, conn_weight=moc_an_weight,multapses=False)
+                # #flip pre and post due to reverse perspective in conn builder
+                # moc_an_list = [(pre,post,w,d) for (post,pre,w,d) in moc_an_list]
+                moc_an_list = normal_dist_connection_builder(n_moc,n_ohcs, RandomDistribution,
                                                                      conn_num=n_moc_an_connections, dist=1.,
-                                                                     sigma=uncrossed_sigma, conn_weight=moc_an_weight)
-                #flip pre and post due to reverse perspective in conn builder
-                moc_an_list = [(pre,post,w,d) for (post,pre,w,d) in moc_an_list]
+                                                                     sigma=uncrossed_sigma, conn_weight=moc_an_weight,multapses=False)
 
                 connection_dicts[ear_index]['moc_an_list'] = moc_an_list
             if moc_feedback:
@@ -447,12 +458,16 @@ if lateral is True:
             if conn_pre_gen:
                 moc_anc_list = connection_dicts[ear_index]['moc_anc_list']
             else:
-                moc_anc_list = normal_dist_connection_builder(n_ohcs,n_moc,  RandomDistribution,
+                # moc_anc_list = normal_dist_connection_builder(n_ohcs,n_moc,  RandomDistribution,
+                #                                                      conn_num=n_moc_an_connections, dist=1.,
+                #                                                      # sigma=number_of_inputs / 100., conn_weight=moc_an_weight)
+                #                                                      sigma=uncrossed_sigma/2., conn_weight=moc_an_weight,multapses=False)
+                # # flip pre and post due to reverse perspective in conn builder
+                # moc_anc_list = [(pre, post, w, d) for (post, pre, w, d) in moc_anc_list]
+                moc_anc_list = normal_dist_connection_builder(n_moc,n_ohcs, RandomDistribution,
                                                                      conn_num=n_moc_an_connections, dist=1.,
                                                                      # sigma=number_of_inputs / 100., conn_weight=moc_an_weight)
-                                                                     sigma=uncrossed_sigma/2., conn_weight=moc_an_weight)
-                # flip pre and post due to reverse perspective in conn builder
-                moc_anc_list = [(pre, post, w, d) for (post, pre, w, d) in moc_anc_list]
+                                                                     sigma=uncrossed_sigma/2., conn_weight=moc_an_weight,multapses=False)
                 connection_dicts[ear_index]['moc_anc_list'] = moc_an_list
             if moc_feedback:
                 moc_anc_projs[ear_index] = sim.Projection(moc_pops[ear_index], input_pops[contra_ear_index],
