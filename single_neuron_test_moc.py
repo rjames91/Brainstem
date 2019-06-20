@@ -176,6 +176,11 @@ IZH_EX_SUBCOR = {'a': 0.02,
                    }
 
 octopus_params_cond_izh = {
+               # 'a':0.02,
+               # 'b':-0.1,
+               # 'c':-55,
+               # 'd':6,
+               # 'u':10,
                 'a':0.02,
                 'b':0.25,
                 'c':-65,
@@ -186,40 +191,61 @@ octopus_params_cond_izh = {
                'v': -70.,
                }
 
-octopus_lif_params = {
-                'tau_m':0.9,
-                'e_rev_E': -40.,
-                'v_reset': -70.,
-                'v_thresh': -50.,
-                'tau_syn_E': 0.2,#1.,#0.5,#
-                # 'cm': 10.,
-                'tau_refrac':0.
-}
-
 t_stellate_izk_class_2_params = {
-               'a':0.4,#0.2,#0.02,#
-               'b':0.26,#0.26,#0.4,#
+               'a':0.5,#0.02,#0.2,
+               'b':0.26,
                'c':-65,
-               'd':1,
+               'd':10,#400,#220,#12,#vary between 12 and 220 for CRs 100-500Hz
                'u':0,#-15,
-               'tau_syn_E':4,#0.94,#3.0,#
+               'tau_syn_E': 0.94,#3.0,#2.5,#
+               # 'tau_syn_E':4. ,#3.0,#2.5,#
+               #'e_rev_E': -54.,#-55.1,#
                'tau_syn_I': 4.0,#2.5,#
                'v': -63.0,
-               # 'i_offset':18.,
-               # 'e_rev_E': 30.
+               # 'i_offset':-5.
 }
 
-d_stellate_izk_class_1_params = {
-               'a':0.02,
-               'b':-0.1,
-               'c':-55,
-               'd':4,
-               'u':10,
-               'tau_syn_E':4.88,
-               'e_rev_E': 0.,
-               'tau_syn_I':4.,
-               'v': -63.0,
+bushy_params_cond = {#'cm': 5.,#57.,  # nF Only 200 cells in mouse CN
+               #'tau_m': 0.5,#10.0,#2.,#3.,#
+               'tau_syn_E': 2.,#2.5,#
+               #'e_rev_E': -25.,#-10.,#-35.,#-55.1,#
+               'v_reset': -60.,#-70.0,
+               'v_rest': -60.,
+               'v_thresh': -40.
+               }
+moc_tonic_params = {
+    'a': 0.02,
+    'b': 0.2,
+    'c': -65,
+    'd':6,
+    'u': -10,
+    'v': -70.0,
 }
+moc_class_2_params = {
+    'a': 0.02,#0.2,
+    'b': 0.26,
+    'c': -65,
+    'd': 0,
+    'u': -15,
+    'v': -65,
+    'tau_syn_E':3.,
+}
+
+moc_rs_params = {
+    'a': 0.02,
+    'b': 0.2,
+    'c': -65,
+    'd': 8,
+    'u': -15,
+    'v': -70,
+    'tau_syn_E': 0.5,
+}
+
+moc_lif_params = {
+    'tau_syn_E': 2.,
+    # 'tau_m':10.
+}
+
 
 dB = 50#20
 input_directory = '/home/rjames/Dropbox (The University of Manchester)/EarProject/Pattern_recognition/spike_trains/IC_spikes'
@@ -229,21 +255,65 @@ input_directory = '/home/rjames/Dropbox (The University of Manchester)/EarProjec
 # an_spikes = [[10.,15.,20.,100.,105.]]#,102,104]]
 # spike_times = [10.,15.,20.,100.,105.]
 # spike_times = [50.,105.]
-test_dur_ms = 20#
-spike_times = [5]#[i for i in range(1,test_dur_ms/2,int(1000./500))]
+test_dur_ms = 150#
+spike_times = [i for i in range(1,test_dur_ms,100)]
 an_spikes = []#,102,104]]
 
-n_inputs = 1
-spike_jitter = 0.5
+n_inputs = 50
+spike_jitter = 5
 for i in range(n_inputs):
     an_spikes.append([i+spike_jitter*(np.random.rand()-0.5) for i in spike_times])
+
+# results_file = "/cn_tone_1000Hz_stereo_0s_1000an_fibres_0.1ms_timestep_100dB_0s_moc_True_lat_True.npz"
+results_file = "/cn_timit_0s_1000an_fibres_0.1ms_timestep_100dB_2s_moc_True_lat_True.npz"
+# results_file = "/cn_tone_1000Hz_stereo_0s_3000an_fibres_0.1ms_timestep_65dB_0s_moc_True_lat_True.npz"
+# results_file = "/cn_tone_1000Hz_stereo_0s_1000an_fibres_0.1ms_timestep_65dB_0s_moc_True_lat_True.npz"
+# results_file = "/cn_tone_1000Hz_stereo_0s_1000an_fibres_0.1ms_timestep_100dB_0s_moc_True_lat_False.npz"
+# results_file = "/cn_tone_1000Hz_stereo_0s_1000an_fibres_0.1ms_timestep_65dB_0s_moc_True_lat_True_{}.npz".format(test_index)
+
+results_data = np.load(input_directory+results_file)
+t_spikes_split = results_data['t_spikes'][0]
+t_spikes_combined = [val for tup in zip(*t_spikes_split) for val in tup]
+
+n_tds = len(t_spikes_split)
+n_ears = 2
+n_fibres = 1000
+n_total = int(6.66 * n_fibres)
+
+#ratios taken from campagnola & manis 2014 mouse
+n_t = int(n_total * 2./3 * 24./89)
+n_d = int(n_total * 1./3 * 24./89)
+n_b = int(n_total * 55./89)#number_of_inputs#
+n_o = int(n_total * 10./89.)
+n_moc =360
+n_sub_t=int(n_t/n_tds)
+pop_size = max([n_fibres,n_d,n_t,n_b,n_o,n_moc])
+
+
+w2s_moc = 0.1#0.05  # 0.75
+# n_t_moc_connections = RandomDistribution('uniform', [5, 10])
+av_t_moc_connections = 50  # int(np.ceil(float(n_t)/n_moc))
+n_t_moc_connections = RandomDistribution('normal_clipped',
+                                         [av_t_moc_connections, 0.1 * av_t_moc_connections, 0,
+                                          av_t_moc_connections * 2.])
+av_t_moc = w2s_moc / av_t_moc_connections  # 9.
+t_moc_weight = RandomDistribution('normal_clipped', [av_t_moc, 0.1 * av_t_moc, 0, av_t_moc * 2.])
+t_mocc_master, max_dist = normal_dist_connection_builder(n_t, n_moc, RandomDistribution,
+                                                         conn_num=n_t_moc_connections, dist=1.,
+                                                         sigma=float(pop_size) / n_moc,
+                                                         conn_weight=t_moc_weight, get_max_dist=True,
+                                                         normalised_space=pop_size)
+t_mocc_list = [[] for _ in range(n_tds)]
+for (pre, post, w, d) in t_mocc_master:
+    i = np.remainder(pre, n_tds)
+    t_mocc_list[i].append((int((float(pre) / n_t) * n_sub_t + 0.5), post, w, d))
 
 # an_spikes = []
 # for _ in range(60):
 #     an_spikes.append([10. + (5. * (np.random.rand()-0.5))])
 # an_spikes = cochlea_file['scaled_times']
-target_pop_size =1
-w2s_target = 1.5#10.#1.6# 0.06#0.3#0.5#0.1#0.2#3.#0.7#1.#15.#0.005#0.0015#0.0006#1.5#4.5#0.12#2.5#5.
+target_pop_size =360
+w2s_target = 2.#0.3#0.5#0.1#0.2#3.#0.7#1.#15.#0.005#0.0015#0.0006#1.5#4.5#0.12#2.5#5.
 # n_connection = 120.#50#100
 n_connections = RandomDistribution('uniform',[30.,120.])
 # connection_weight = w2s_target/n_connections#w2s_target#initial_weight*2.#/2.
@@ -269,7 +339,6 @@ inh_spikes = []
 # SpiNNaker setup
 #================================================================================================
 sim.setup(timestep=0.1)
-# sim.setup(timestep=1.)
 # sim.set_number_of_neurons_per_core(sim.IF_cond_exp,64)
 # sim.set_number_of_neurons_per_core(sim.SpikeSourceArray,128)
 
@@ -277,41 +346,23 @@ sim.setup(timestep=0.1)
 # Populations
 #================================================================================================
 input_pops=[]
-# input_spikes = [10.]
-input_pop = sim.Population(n_inputs,sim.SpikeSourceArray(spike_times=input_spikes),label="an_pop_input")
-# input_pop_2 = sim.Population(n_inputs,sim.SpikeSourceArray(spike_times=input_spikes),label="an_pop_input")
-# input_pop = sim.Population(n_inputs,sim.SpikeSourcePoisson(rate=0.,duration=test_dur_ms*0.4),label="an_pop_input")
-# input_pop_2 = sim.Population(n_inputs,sim.SpikeSourcePoisson(rate=500.,duration=test_dur_ms*0.4,start=test_dur_ms*0.6),label="an_pop_input")
+for i,in_spikes in enumerate(t_spikes_split):
+    n_inputs = len(in_spikes)
+    input_pops.append(sim.Population(n_inputs, sim.SpikeSourceArray(spike_times=in_spikes), label="an_pop_input {}".format(i)))
+
+# input_pop = sim.Population(number_of_inputs,sim.SpikeSourceArray(spike_times=input_spikes),label="an_pop_input")
 # inh_pop = sim.Population(1,sim.SpikeSourceArray(spike_times=inh_spikes))
 # cd_pop = sim.Population(1,sim.IF_curr_exp,target_cell_params,label="fixed_weight_scale")
 # cd_pop = sim.Population(target_pop_size,sim.IF_curr_exp,one_to_one_cond_params,label="fixed_weight_scale")
-
-# cd_pop = sim.Population(target_pop_size,sim.extra_models.Izhikevich_cond,{},label="fixed_weight_scale_cond")
-cd_pop = sim.Population(target_pop_size,sim.Izhikevich,{},label="fixed_weight_scale_cond")
+# cd_pop = sim.Population(target_pop_size,sim.extra_models.Izhikevich_cond,moc_class_2_params,label="fixed_weight_scale_cond")
 # cd_pop = sim.Population(target_pop_size,sim.extra_models.Izhikevich_cond,octopus_params_cond_izh,label="fixed_weight_scale_cond")
-# cd_pop = sim.Population(target_pop_size,sim.IF_cond_exp,moc_lif_params,label="fixed_weight_scale_cond")
-# cd_pop = sim.Population(1,sim.extra_models.Izhikevich_cond,t_stellate_izk_class_2_params,label="fixed_weight_scale_cond")
-# cd_pop = sim.Population(1,sim.extra_models.Izhikevich_cond,t_stellate_izk_class_2_params,label="fixed_weight_scale_cond")
-# t_stellate_izk_class_2_params['d']=100
-# t_stellate_izk_class_2_params['i_offset']=50
-# octopus_params_cond_izh['i_offset']=50
-# octopus_lif_params['i_offset']=50
-cd_pop_2 = sim.Population(1,sim.extra_models.Izhikevich_cond,d_stellate_izk_class_1_params,label="fixed_weight_scale_cond")
-# cd_pop_2 = sim.Population(1,sim.Izhikevich,d_stellate_izk_class_1_params,label="fixed_weight_scale_cond")
-# cd_pop_2 = sim.Population(1,sim.IF_cond_exp,octopus_lif_params,label="fixed_weight_scale_cond")
-# cd_pop_2 = sim.Population(1,sim.IF_cond_exp,{'tau_m':5.,'tau_syn_E':0.1},label="fixed_weight_scale_cond")
-# cd_pop_2 = sim.Population(1,sim.IF_cond_exp,{'tau_m':20.,'tau_syn_E': 0.94,'v_thresh':-40},label="fixed_weight_scale_cond")
-# cd_pop = sim.Population(target_pop_size,sim.IF_cond_exp,{'tau_m':20.,'cm':2.,'i_offset':20.},label="fixed_weight_scale_cond")
-# cd_pop_2 = sim.Population(target_pop_size,sim.IF_cond_exp,{'tau_m':20.,'cm':2.,'i_offset':30.},label="fixed_weight_scale_cond")
-# cd_pop = sim.Population(target_pop_size,sim.extra_models.Izhikevich_cond,{'v':-65,'d':6,'i_offset':20.},label="fixed_weight_scale_cond")
+cd_pop = sim.Population(target_pop_size,sim.IF_cond_exp,moc_lif_params,label="fixed_weight_scale_cond")
 # cd_pop = sim.Population(1,sim.IF_curr_exp,on_params,label="fixed_weight_scale")
 # cd_pop = sim.Population(1,sim.IF_curr_exp,inh_params,label="fixed_weight_scale")
 # inh_pop =
 # input_pop.record("spikes")
 
 cd_pop.record("all")
-cd_pop_2.record("all")
-# cd_pop.record(["v"])
 #================================================================================================
 # Projections
 #================================================================================================
@@ -339,66 +390,53 @@ connection_weight = av_weight#w2s_target/number_of_inputs
 
 # input_projection = sim.Projection(input_pop,cd_pop,sim.FromListConnector(an_on_list),synapse_type=sim.StaticSynapse())
 # input_projection = sim.Projection(input_pop,cd_pop,sim.FromListConnector(an2ch_list),synapse_type=sim.StaticSynapse(weight=an2ch_weight))
-input_projection = sim.Projection(input_pop,cd_pop,sim.AllToAllConnector(),synapse_type=sim.StaticSynapse(weight=connection_weight,delay=0.1))
-input_projection = sim.Projection(input_pop,cd_pop_2,sim.AllToAllConnector(),synapse_type=sim.StaticSynapse(weight=connection_weight,delay=0.1))
-# input_projection = sim.Projection(input_pop_2,cd_pop_2,sim.AllToAllConnector(),synapse_type=sim.StaticSynapse(weight=connection_weight))
+# input_projection = sim.Projection(input_pop,cd_pop,sim.AllToAllConnector(),synapse_type=sim.StaticSynapse(weight=connection_weight))
 # input_projection = sim.Projection(input_pop,cd_pop,sim.FixedProbabilityConnector(p_connect=n_connections/number_of_inputs),synapse_type=sim.StaticSynapse(weight=connection_weight))
 #inh_projection = sim.Projection(inh_pop,cd_pop,sim.AllToAllConnector(),synapse_type=sim.StaticSynapse(weight=inh_weight),receptor_type='inhibitory')
 # inh_projection = sim.Projection(inh_pop,cd_pop,sim.AllToAllConnector(),synapse_type=stdp_model_cd,receptor_type='inhibitory')
 
-# for i, t_mocc_l in enumerate(t_mocc_list):
-#     if len(t_mocc_l) > 0:
-#         sim.Projection(input_pops[i], cd_pop,sim.FromListConnector(t_mocc_l), synapse_type=sim.StaticSynapse())
+for i, t_mocc_l in enumerate(t_mocc_list):
+    if len(t_mocc_l) > 0:
+        sim.Projection(input_pops[i], cd_pop,sim.FromListConnector(t_mocc_l), synapse_type=sim.StaticSynapse())
 
 duration = test_dur_ms#max(input_spikes[0])
 
 sim.run(duration)
 
-cd_data =[]
-cd_data.append(cd_pop.get_data())
-cd_data.append(cd_pop_2.get_data())
+cd_data = cd_pop.get_data()
 # input_data = input_pop.get_data()
 
 sim.end()
-print "w2s",w2s_target
 
-# Figure(
-#     # plot data for postsynaptic neuron
-#     Panel(cd_data.segments[0].filter(name='v')[0],
-#           ylabel="Membrane potential (mV)",legend=False,
-#           yticks=True,xticks=True, xlim=(0, duration)),
-#     # Panel(cd_data.segments[0].filter(name='gsyn_exc')[0],
-#     #       ylabel="gsyn excitatory (mV)",legend=False,
-#     #        yticks=True,xticks=True, xlim=(0, duration)),
-#     # Panel(cd_data.segments[0].filter(name='gsyn_inh')[0],
-#     #       ylabel="gsyn inhibitory (mV)",legend=False,
-#     #        yticks=True,xticks=True, xlim=(0, duration)),
-#     Panel(cd_data.segments[0].spiketrains,marker='.',
-#           yticks=True,markersize=3,
-#                  markerfacecolor='black', markeredgecolor='none',
-#                  markeredgewidth=0,xticks=True, xlim=(0, duration)),
-#     # Panel(input_data.segments[0].spiketrains, marker='.',
-#     #       yticks=True, markersize=3,
-#     #       markerfacecolor='black', markeredgecolor='none',
-#     #       markeredgewidth=0, xticks=True, xlim=(0, duration))
-# )
+Figure(
+    # plot data for postsynaptic neuron
+    Panel(cd_data.segments[0].filter(name='v')[0],
+          ylabel="Membrane potential (mV)",legend=False,
+          yticks=True,xticks=True, xlim=(0, duration)),
+    Panel(cd_data.segments[0].filter(name='gsyn_exc')[0],
+          ylabel="gsyn excitatory (mV)",legend=False,
+           yticks=True,xticks=True, xlim=(0, duration)),
+    # Panel(cd_data.segments[0].filter(name='gsyn_inh')[0],
+    #       ylabel="gsyn inhibitory (mV)",legend=False,
+    #        yticks=True,xticks=True, xlim=(0, duration)),
+    Panel(cd_data.segments[0].spiketrains,marker='.',
+          yticks=True,markersize=3,
+                 markerfacecolor='black', markeredgecolor='none',
+                 markeredgewidth=0,xticks=True, xlim=(0, duration)),
+    # Panel(input_data.segments[0].spiketrains, marker='.',
+    #       yticks=True, markersize=3,
+    #       markerfacecolor='black', markeredgecolor='none',
+    #       markeredgewidth=0, xticks=True, xlim=(0, duration))
+)
 
-# psth_plot_8(plt, numpy.arange(len(t_spikes_combined)),t_spikes_combined , bin_width=0.25 / 1000.,
-#             duration=duration/1000., title='psth input')
-# psth_plot_8(plt, numpy.arange(len(cd_data.segments[0].spiketrains)),cd_data.segments[0].spiketrains , bin_width=0.25 / 1000.,
-#             duration=duration/1000., title='psth output')
-# title = "Izhikevich neuron"
-for i in range(1,2):
-    title = "LIF neuron_{}".format(i)
-    plt.figure(title)
-    spike_raster_plot_8(cd_data[i].segments[0].spiketrains,plt,duration/1000.,1+1,0.001,title=title,subplots=(3,1,1))
-    mem_v = cd_data[i].segments[0].filter(name='v')
-    cell_voltage_plot_8(mem_v, plt, duration, [],scale_factor=0.0001,title="",subplots=(3,1,2))
-    plt.ylabel("membrane voltage (mV)")
-    gsyn = cd_data[i].segments[0].filter(name='gsyn_exc')
-    cell_voltage_plot_8(gsyn, plt, duration, [],scale_factor=0.0001,title="",subplots=(3,1,3))
+psth_plot_8(plt, numpy.arange(len(t_spikes_combined)),t_spikes_combined , bin_width=0.25 / 1000.,
+            duration=duration/1000., title='psth input')
+psth_plot_8(plt, numpy.arange(len(cd_data.segments[0].spiketrains)),cd_data.segments[0].spiketrains , bin_width=0.25 / 1000.,
+            duration=duration/1000., title='psth output')
+spike_raster_plot_8(t_spikes_combined,plt,duration/1000.,n_t+1,0.001,title="input activity")
 
-# spike_raster_plot_8(input_spikes,plt,duration/1000.,1+1,0.001,title='input')
+# mem_v = cd_data.segments[0].filter(name='v')
+# # cell_voltage_plot_8(mem_v, plt, duration, [],id=599,scale_factor=0.001,title='cd pop')
 #
 # ch_spikes = cd_data.segments[0].spiketrains
 #

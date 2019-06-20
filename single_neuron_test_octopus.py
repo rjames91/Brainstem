@@ -12,177 +12,35 @@ from elephant.statistics import isi,cv
 #================================================================================================
 # Simulation parameters
 #================================================================================================
-model = sim.IF_curr_exp
-target_cell_params = {'cm': 0.25,  # nF
-               'i_offset': 0.0,
-               'tau_m': 2.,#3.,#10.0,
-               'tau_refrac': 1.0,#2.0,#
-               'tau_syn_E': 1.0,#2.5,
-               'tau_syn_I': 1.0,#2.5,
-               'v_reset': -70.0,
-               'v_rest': -65.0,
-               'v_thresh': -55.4
-               }
-
-inh_cond_params = {'cm': 0.25,  # nF
-               'i_offset': 0.0,
-               'tau_m': 2.,#3.,#10.0,
-               #'tau_refrac': 1.0,#2.0,#
-               'tau_syn_E': 10.0,#2.5,
-               #'tau_syn_I': 1.0,#2.5,
-               'e_rev_E': -50.0,
-               'e_rev_I': 0,
-               'v_reset': -70.0,
-               'v_rest': -70.0,
-               'v_thresh':-45.0#-55.4#
-               }
-
-neuron_params = {
-    "v_thresh": 100,
-    "v_reset": 0,
-    "v_rest": 0,
-    "i_offset": 0,
-    "e_rev_E": 80,
-#     "tau_syn_E":50,
-    "e_rev_I": 0 # DC input
-                 }
-
-ex_params_cond = {#'cm': 0.25,  # nF
-               # 'i_offset': 0.0,
-               # 'tau_m': 5.,#10.0,#2.,#3.,#
-               # 'tau_refrac': 1.0,#2.0,#
-               # 'tau_syn_E': 3.0,#2.5,#
-               'e_rev_E': -49.,#-55.1,#
-               'tau_syn_I': 10.0,#2.5,#
-               'v_reset': -70.0,
-               'v_rest': -70.0,
-               'v_thresh': -50.0
-               }
-ch_params_cond = {#'cm': 0.25,  # nF
-               # 'i_offset': 0.0,
-                'tau_m': 3.8,#10.0,#2.,#3.,#
-               # 'tau_refrac': 1.0,#2.0,#
-               'tau_syn_E': 0.94/0.37,#3.0,#2.5,#
-               #'e_rev_E': -54.,#-55.1,#
-               #'tau_syn_I': 10.0,#2.5,#
-               'v_reset': -70.0,
-               'v_rest': -63.0,
-               'v_thresh': -41.7
-               }
-on_params_cond = {#'cm': 0.25,  # nF
-               # 'i_offset': 0.0,
-               'tau_m': 2.9,#10.0,#2.,#3.,#
-               # 'tau_refrac': 1.0,#2.0,#
-               'tau_syn_E': 4.88/0.37,#2.5,#
-               'e_rev_E': -15.,#-55.1,#
-               #'tau_syn_I': 10.0,#2.5,#
-               'v_reset': -70.0,
-               'v_rest': -63.0,
-               'v_thresh': -39.5
-               }
-on_params = {#'cm': 0.25,  # nF
-               # 'i_offset': 0.0,
-               'tau_m': 2.9,#10.0,#2.,#3.,#
-               # 'tau_refrac': 1.0,#2.0,#
-               'tau_syn_E': 4.88/0.37,#2.5,#
-               #'tau_syn_I': 10.0,#2.5,#
-               'v_reset': -70.0,
-               'v_rest': -63.0,
-               'v_thresh': -39.5
-               }
-
-octopus_params_cond = {'cm': 1.,#57.,  # nF
-               'tau_m': 0.5,#10.0,#2.,#3.,#
-               'tau_syn_E': 0.35,#2.5,#
-               'e_rev_E': -55.,#-20.,#-10.,#-35.,#-55.1,#
-               'v_reset': -60.6,#-70.0,
-               'v_rest': -60.6,
-               'v_thresh': -56.
-               }
-
-t_stellate_params_cond = {#'cm': 0.25,  # nF
-               # 'i_offset': 0.0,
-                'tau_m': 3.8,#10.0,#2.,#3.,#
-               # 'tau_refrac': 1.0,#2.0,#
-               'tau_syn_E': 0.94,#3.0,#2.5,#
-               #'e_rev_E': -54.,#-55.1,#
-               #'tau_syn_I': 10.0,#2.5,#
-               'v_reset': -70.0,
-               'v_rest': -63.0,
-               'v_thresh': -41.7
-               }
-
-d_stellate_params_cond = {#'cm': 0.25,  # nF
-               # 'i_offset': 0.0,
-               'tau_m': 2.9,#10.0,#2.,#3.,#
-               # 'tau_refrac': 1.0,#2.0,#
-               'tau_syn_E': 4.88,#2.5,#
-               'e_rev_E': -30.,#-35.,#-25.,#-55.1,#
-               #'tau_syn_I': 10.0,#2.5,#
-               'v_reset': -70.0,
-               'v_rest': -63.0,
-               'v_thresh': -39.5
-               }
-
-one_to_one_cond_params = {
-                'tau_m': .1,
-                'tau_syn_E': .1,
-                'v_thresh': -64.
-}
-
-
-izk_class_1_params = {
-               'a':0.03,
-               'b':-2,
-               'c':-50,
-               'd':80,
-               'u':0,
-               'tau_syn_E': 0.94,#3.0,#2.5,#
-               #'e_rev_E': -54.,#-55.1,#
-               'tau_syn_I': 4.0,#2.5,#
-               'v': -70.0,
-}
-
-d_stellate_izk_class_2_params = {
-               'a':0.2,
-               'b':0.26,
-               'c':-65,
-               'd':0,
-               'u':-15,
-               'tau_syn_E':4.88,
-               'e_rev_E': -30.,
-               'tau_syn_I':4.,
-               'v': -63.0,
-}
-
-d_stellate_izk_class_1_params = {
-               'a':0.02,
-               'b':-0.1,
-               'c':-55,
-               'd':6,
-               'u':10,
-               'tau_syn_E':4.88,
-               'e_rev_E': -30.,
-               'tau_syn_I':4.,
-               'v': -63.0,
-}
-
-IZH_EX_SUBCOR = {'a': 0.02,
-                   'b': -0.1,
-                   'c': -55,
-                   'd': 6,
-                   'v': -75,
-                   'u': 10.,#0.,
-                   }
-
-octopus_params_cond_izh = {
+# octopus_params_cond_izh_orig = {
+#                 'a':0.02,
+#                 'b':0.25,#0.05,#
+#                 'c':-65,
+#                 'd':4,
+#                 'u':-15,
+#                'tau_syn_E': 0.2,#0.35,#2.5,#
+#                'e_rev_E': -55.,#-10.,#-10.,#-35.,#-55.1,#
+#                'v': -70.,
+#                }
+octopus_params_cond_izh_orig = {
                 'a':0.02,
-                'b':0.25,
+                'b':0.1,#0.05,#
                 'c':-65,
                 'd':4,
                 'u':-15,
                'tau_syn_E': 0.2,#0.35,#2.5,#
-               'e_rev_E': -55.,#-25.,#-10.,#-35.,#-55.1,#
+               'e_rev_E': -55.,#-10.,#-10.,#-35.,#-55.1,#
+               'v': -70.,
+               }
+
+octopus_params_cond_izh = {
+                'a':0.02,
+                'b':0.1,#0.25,#
+                'c':-65,
+                'd':4,
+                'u':-15,
+               'tau_syn_E': 0.2,#0.35,#2.5,#
+               'e_rev_E':-10.,# 30.,#-35.,#-55.1,#
                'v': -70.,
                }
 
@@ -196,54 +54,59 @@ octopus_lif_params = {
                 'tau_refrac':0.
 }
 
-t_stellate_izk_class_2_params = {
-               'a':0.4,#0.2,#0.02,#
-               'b':0.26,#0.26,#0.4,#
+izk_B = {
+               'a':0.02,#0.2,
+               'b':0.25,#0.01,
                'c':-65,
-               'd':1,
-               'u':0,#-15,
-               'tau_syn_E':4,#0.94,#3.0,#
-               'tau_syn_I': 4.0,#2.5,#
-               'v': -63.0,
-               # 'i_offset':18.,
-               # 'e_rev_E': 30.
+               'd':6,
+               'u':-15,
+               'tau_syn_E': 1.,#0.2,
+               'e_rev_E': -47.,
+               #'tau_syn_I': 4.0,#2.5,#
+               'v': -70.0,
+               # 'i_offset':30.
+}
+izk_A = {
+               'a':0.2,
+               'b':0.02,
+               'c':-65,#-40,#
+               'd':6,
+               'u':-15,
+               'tau_syn_E': 0.2,
+               'e_rev_E': -20.,
+               #'tau_syn_I': 4.0,#2.5,#
+               'v': -80,#-70.0,#-50.,#
+               # 'i_offset':30.
 }
 
-d_stellate_izk_class_1_params = {
-               'a':0.02,
-               'b':-0.1,
-               'c':-55,
-               'd':4,
-               'u':10,
-               'tau_syn_E':4.88,
-               'e_rev_E': 0.,
-               'tau_syn_I':4.,
-               'v': -63.0,
-}
+results_directory = '/home/rjames/Dropbox (The University of Manchester)/EarProject/Pattern_recognition/spike_trains/IC_spikes'
+results_file = "/cn_tone_1000Hz_stereo_0s_1000an_fibres_0.1ms_timestep_100dB_0s_moc_True_lat_True.npz"
+# results_file = "/cn_tone_1000Hz_stereo_0s_1000an_fibres_0.1ms_timestep_0dB_0s_moc_True_lat_True.npz"
+results_data = np.load(results_directory+results_file)
+an_spikes = results_data['an_spikes'][0]
 
-dB = 50#20
-input_directory = '/home/rjames/Dropbox (The University of Manchester)/EarProject/Pattern_recognition/spike_trains/IC_spikes'
 # cochlea_file = np.load(input_directory + '/spinnakear_1kHz_60s_{}dB.npz'.format(dB))
 # cochlea_file = np.load(input_directory + '/spinnakear_13.5_1_kHz_75s_{}dB_1000fibres.npz'.format(dB))
 # an_spikes = [[i*7.+ 3.*(np.random.rand()-0.5) for i in range(50)]for _ in range(100)]#[[10.,11.,12.,13.]]#cochlea_file['scaled_times']
 # an_spikes = [[10.,15.,20.,100.,105.]]#,102,104]]
 # spike_times = [10.,15.,20.,100.,105.]
 # spike_times = [50.,105.]
-test_dur_ms = 20#
-spike_times = [5]#[i for i in range(1,test_dur_ms/2,int(1000./500))]
-an_spikes = []#,102,104]]
+test_dur_ms = 200#
+spike_times = [i for i in range(1,test_dur_ms,10)]
+# an_spikes = []#,102,104]]
+# n_inputs = 1000
+# spike_jitter = 0
+# for i in range(n_inputs):
+#     an_spikes.append([i+spike_jitter*(np.random.rand()-0.5) for i in spike_times])
 
-n_inputs = 1
-spike_jitter = 0.5
-for i in range(n_inputs):
-    an_spikes.append([i+spike_jitter*(np.random.rand()-0.5) for i in spike_times])
+n_inputs = len(an_spikes)
 
 # an_spikes = []
 # for _ in range(60):
 #     an_spikes.append([10. + (5. * (np.random.rand()-0.5))])
 # an_spikes = cochlea_file['scaled_times']
 target_pop_size =1
-w2s_target = 1.5#10.#1.6# 0.06#0.3#0.5#0.1#0.2#3.#0.7#1.#15.#0.005#0.0015#0.0006#1.5#4.5#0.12#2.5#5.
+w2s_target = 0.1# 30.#0.06#1.6#0.3#0.5#0.1#0.2#3.#0.7#1.#15.#0.005#0.0015#0.0006#1.5#4.5#0.12#2.5#5.
 # n_connection = 120.#50#100
 n_connections = RandomDistribution('uniform',[30.,120.])
 # connection_weight = w2s_target/n_connections#w2s_target#initial_weight*2.#/2.
@@ -253,6 +116,10 @@ av_weight =w2s_target/n_inputs#/30.#w2s_target/90.# w2s_target/n_connections#
 #plt.show()
 
 number_of_inputs = len(an_spikes)#
+n_total = int(2.4 * number_of_inputs)
+n_b = int(n_total * 55./89)#number_of_inputs#
+n_o = int(n_total * 10./89.)
+pop_size = max([number_of_inputs,n_b])
 # inh_weight = initial_weight#(n_connections-number_of_inputs)*(initial_weight)#*2.
 
 input_spikes = an_spikes
@@ -285,22 +152,21 @@ input_pop = sim.Population(n_inputs,sim.SpikeSourceArray(spike_times=input_spike
 # inh_pop = sim.Population(1,sim.SpikeSourceArray(spike_times=inh_spikes))
 # cd_pop = sim.Population(1,sim.IF_curr_exp,target_cell_params,label="fixed_weight_scale")
 # cd_pop = sim.Population(target_pop_size,sim.IF_curr_exp,one_to_one_cond_params,label="fixed_weight_scale")
-
-# cd_pop = sim.Population(target_pop_size,sim.extra_models.Izhikevich_cond,{},label="fixed_weight_scale_cond")
-cd_pop = sim.Population(target_pop_size,sim.Izhikevich,{},label="fixed_weight_scale_cond")
+# cd_pop = sim.Population(target_pop_size,sim.extra_models.Izhikevich_cond,moc_class_2_params,label="fixed_weight_scale_cond")
 # cd_pop = sim.Population(target_pop_size,sim.extra_models.Izhikevich_cond,octopus_params_cond_izh,label="fixed_weight_scale_cond")
 # cd_pop = sim.Population(target_pop_size,sim.IF_cond_exp,moc_lif_params,label="fixed_weight_scale_cond")
 # cd_pop = sim.Population(1,sim.extra_models.Izhikevich_cond,t_stellate_izk_class_2_params,label="fixed_weight_scale_cond")
 # cd_pop = sim.Population(1,sim.extra_models.Izhikevich_cond,t_stellate_izk_class_2_params,label="fixed_weight_scale_cond")
+
 # t_stellate_izk_class_2_params['d']=100
 # t_stellate_izk_class_2_params['i_offset']=50
 # octopus_params_cond_izh['i_offset']=50
 # octopus_lif_params['i_offset']=50
-cd_pop_2 = sim.Population(1,sim.extra_models.Izhikevich_cond,d_stellate_izk_class_1_params,label="fixed_weight_scale_cond")
-# cd_pop_2 = sim.Population(1,sim.Izhikevich,d_stellate_izk_class_1_params,label="fixed_weight_scale_cond")
+# cd_pop_2 = sim.Population(1,sim.extra_models.Izhikevich_cond,octopus_params_cond_izh,label="fixed_weight_scale_cond")
+cd_pop = sim.Population(n_o,sim.extra_models.Izhikevich_cond,octopus_params_cond_izh_orig,label="fixed_weight_scale_cond_1")
+cd_pop_2 = sim.Population(n_o,sim.extra_models.Izhikevich_cond,octopus_params_cond_izh,label="fixed_weight_scale_cond_2")
 # cd_pop_2 = sim.Population(1,sim.IF_cond_exp,octopus_lif_params,label="fixed_weight_scale_cond")
-# cd_pop_2 = sim.Population(1,sim.IF_cond_exp,{'tau_m':5.,'tau_syn_E':0.1},label="fixed_weight_scale_cond")
-# cd_pop_2 = sim.Population(1,sim.IF_cond_exp,{'tau_m':20.,'tau_syn_E': 0.94,'v_thresh':-40},label="fixed_weight_scale_cond")
+# cd_pop_2 = sim.Population(1,sim.IF_cond_exp,{},label="fixed_weight_scale_cond")
 # cd_pop = sim.Population(target_pop_size,sim.IF_cond_exp,{'tau_m':20.,'cm':2.,'i_offset':20.},label="fixed_weight_scale_cond")
 # cd_pop_2 = sim.Population(target_pop_size,sim.IF_cond_exp,{'tau_m':20.,'cm':2.,'i_offset':30.},label="fixed_weight_scale_cond")
 # cd_pop = sim.Population(target_pop_size,sim.extra_models.Izhikevich_cond,{'v':-65,'d':6,'i_offset':20.},label="fixed_weight_scale_cond")
@@ -336,11 +202,26 @@ cd_pop_2.record("all")
 connection_weight = av_weight#w2s_target/number_of_inputs
 # an_on_list = normal_dist_connection_builder(number_of_inputs,target_pop_size,RandomDistribution,conn_num=n_connections,dist=1.,sigma=number_of_inputs/6.
 #                                             ,conn_weight=connection_weight)
+w2s_o = 1.5  #3.# 2.#7.
+n_an_o_connections = RandomDistribution('uniform', [30., 120.])
+# n_an_o_connections = RandomDistribution('normal_clipped',[50.,5.,30.,120.])
+av_an_o = w2s_o / 50.
+an_o_weight = RandomDistribution('normal_clipped', [av_an_o, 0.1 * av_an_o, 0, av_an_o * 2.])
+
+an_o_list, max_dist = normal_dist_connection_builder(number_of_inputs, n_o, RandomDistribution,
+                                                     conn_num=n_an_o_connections, dist=1.,
+                                                     sigma=pop_size / 20., conn_weight=an_o_weight,
+                                                     normalised_space=pop_size, get_max_dist=True)
+sim.Projection(input_pop, cd_pop, sim.FromListConnector(an_o_list),
+                                       synapse_type=sim.StaticSynapse())
+
+sim.Projection(input_pop, cd_pop_2, sim.FromListConnector(an_o_list),
+                                       synapse_type=sim.StaticSynapse())
 
 # input_projection = sim.Projection(input_pop,cd_pop,sim.FromListConnector(an_on_list),synapse_type=sim.StaticSynapse())
 # input_projection = sim.Projection(input_pop,cd_pop,sim.FromListConnector(an2ch_list),synapse_type=sim.StaticSynapse(weight=an2ch_weight))
-input_projection = sim.Projection(input_pop,cd_pop,sim.AllToAllConnector(),synapse_type=sim.StaticSynapse(weight=connection_weight,delay=0.1))
-input_projection = sim.Projection(input_pop,cd_pop_2,sim.AllToAllConnector(),synapse_type=sim.StaticSynapse(weight=connection_weight,delay=0.1))
+# input_projection = sim.Projection(input_pop,cd_pop,sim.AllToAllConnector(),synapse_type=sim.StaticSynapse(weight=connection_weight))
+# input_projection = sim.Projection(input_pop,cd_pop_2,sim.AllToAllConnector(),synapse_type=sim.StaticSynapse(weight=connection_weight))
 # input_projection = sim.Projection(input_pop_2,cd_pop_2,sim.AllToAllConnector(),synapse_type=sim.StaticSynapse(weight=connection_weight))
 # input_projection = sim.Projection(input_pop,cd_pop,sim.FixedProbabilityConnector(p_connect=n_connections/number_of_inputs),synapse_type=sim.StaticSynapse(weight=connection_weight))
 #inh_projection = sim.Projection(inh_pop,cd_pop,sim.AllToAllConnector(),synapse_type=sim.StaticSynapse(weight=inh_weight),receptor_type='inhibitory')
@@ -360,7 +241,6 @@ cd_data.append(cd_pop_2.get_data())
 # input_data = input_pop.get_data()
 
 sim.end()
-print "w2s",w2s_target
 
 # Figure(
 #     # plot data for postsynaptic neuron
@@ -388,17 +268,17 @@ print "w2s",w2s_target
 # psth_plot_8(plt, numpy.arange(len(cd_data.segments[0].spiketrains)),cd_data.segments[0].spiketrains , bin_width=0.25 / 1000.,
 #             duration=duration/1000., title='psth output')
 # title = "Izhikevich neuron"
-for i in range(1,2):
+for i in range(2):
     title = "LIF neuron_{}".format(i)
     plt.figure(title)
-    spike_raster_plot_8(cd_data[i].segments[0].spiketrains,plt,duration/1000.,1+1,0.001,title=title,subplots=(3,1,1))
+    spike_raster_plot_8(cd_data[i].segments[0].spiketrains,plt,duration/1000.,n_o+1,0.001,title=title,subplots=(3,1,1))
     mem_v = cd_data[i].segments[0].filter(name='v')
-    cell_voltage_plot_8(mem_v, plt, duration, [],scale_factor=0.0001,title="",subplots=(3,1,2))
+    cell_voltage_plot_8(mem_v, plt, duration, [],id=n_o/2,scale_factor=0.0001,title="",subplots=(3,1,2))
     plt.ylabel("membrane voltage (mV)")
     gsyn = cd_data[i].segments[0].filter(name='gsyn_exc')
     cell_voltage_plot_8(gsyn, plt, duration, [],scale_factor=0.0001,title="",subplots=(3,1,3))
 
-# spike_raster_plot_8(input_spikes,plt,duration/1000.,1+1,0.001,title='input')
+
 #
 # ch_spikes = cd_data.segments[0].spiketrains
 #
