@@ -8,11 +8,11 @@ from elephant.statistics import isi,cv
 import quantities as pq
 
 plot_spikes = True
-plot_moc = False
+plot_moc = True
 plot_isi = False
 plot_psth = False
 plot_abr = False
-plot_stim =False
+plot_stim =True
 # n_total = int(2. * n_fibres)
 # Open the results
 results_directory = '/home/rjames/Dropbox (The University of Manchester)/EarProject/Pattern_recognition/spike_trains/IC_spikes'
@@ -26,33 +26,43 @@ test_index = 1
 # results_file = "/cn_tone_1000Hz_stereo_0s_3000an_fibres_0.1ms_timestep_65dB_0s_moc_True_lat_True.npz"
 # results_file = "/cn_tone_1000Hz_stereo_0s_1000an_fibres_0.1ms_timestep_100dB_0s_moc_True_lat_True.npz"
 # results_file = "/cn_tone_1000Hz_stereo_1s_1000an_fibres_0.1ms_timestep_100dB_1s_moc_True_lat_True.npz"
-results_file = "/cn_click_0s_1000an_fibres_0.1ms_timestep_80dB_0s_moc_True_lat_True.npz"
+# results_file = "/cn_click_0s_1000an_fibres_0.1ms_timestep_80dB_0s_moc_True_lat_True.npz"
 # results_file = "/cn_click_0s_1000an_fibres_0.1ms_timestep_60dB_0s_moc_True_lat_True.npz"
-# results_file = "/cn_tone_1000Hz_stereo_0s_1000an_fibres_0.1ms_timestep_65dB_0s_moc_True_lat_True.npz"
+# results_file = "/cn_tone_1000Hz_stereo_0s_1000an_fibres_0.1ms_timestep_50dB_0s_moc_True_lat_True.npz"
+results_file = "/cn_timit_0s_1000an_fibres_0.1ms_timestep_65dB_3s_moc_True_lat_True.npz"
+
 # results_file = "/cn_tone_1000Hz_stereo_0s_1000an_fibres_0.1ms_timestep_100dB_0s_moc_True_lat_False.npz"
 # results_file = "/cn_tone_1000Hz_stereo_0s_1000an_fibres_0.1ms_timestep_65dB_0s_moc_True_lat_True_{}.npz".format(test_index)
 n_ears = 2
 
 # duration = binaural_audio_data[0].size/Fs
-duration = 0.1#2.45#0.25#0.75#1.#
+recording_vars = ['spikes']
+
 results_data = np.load(results_directory+results_file)
 Fs = results_data['Fs']
+
 sg_spikes = [data.segments[0].spiketrains for data in results_data['sg_data']]
-sg_mem_v = [data.segments[0].filter(name='v') for data in results_data['sg_data']]
 t_data_split = results_data['t_data']
-t_spikes_combined,t_mem_v = split_population_data_combine(t_data_split,['spikes','v'])
+t_combined = split_population_data_combine(t_data_split,recording_vars)
+t_spikes_combined = t_combined['spikes']
 d_data_split = results_data['d_data']
-d_spikes_combined,d_mem_v = split_population_data_combine(d_data_split,['spikes','v'])
+d_combined = split_population_data_combine(d_data_split,recording_vars)
+d_spikes_combined = d_combined['spikes']
 b_spikes = [data.segments[0].spiketrains for data in results_data['b_data']]
-b_mem_v = [data.segments[0].filter(name='v') for data in results_data['b_data']]
 o_spikes = [data.segments[0].spiketrains for data in results_data['o_data']]
-o_mem_v = [data.segments[0].filter(name='v') for data in results_data['o_data']]
 moc_spikes = [data.segments[0].spiketrains for data in results_data['moc_data']]
-moc_mem_v = [data.segments[0].filter(name='v') for data in results_data['moc_data']]
 an_spikes = [data['spikes'] for data in results_data['ear_data']]
 moc_att = [data['moc'] for data in results_data['ear_data']]
 onset_times = results_data['onset_times'][0]
 stimulus = results_data['stimulus']
+
+if 'v' in recording_vars:
+    sg_mem_v = [data.segments[0].filter(name='v') for data in results_data['sg_data']]
+    b_mem_v = [data.segments[0].filter(name='v') for data in results_data['b_data']]
+    o_mem_v = [data.segments[0].filter(name='v') for data in results_data['o_data']]
+    moc_mem_v = [data.segments[0].filter(name='v') for data in results_data['moc_data']]
+    t_mem_v = t_combined['v']
+    d_mem_v = d_combined['v']
 
 duration = len(stimulus[0])/Fs
 
@@ -105,8 +115,8 @@ for ear_index in range(n_ears):
         non_zero_neuron_times = np.flipud(neuron_times[ear_index])
         # non_zero_neuron_times = np.flipud(neuron_times)
         mid_point = int(len(non_zero_neuron_times)*0.5)
-        psth_spikes = non_zero_neuron_times[:]
-        # psth_spikes = non_zero_neuron_times[mid_point-10:mid_point+10]
+        # psth_spikes = non_zero_neuron_times[:]
+        psth_spikes = non_zero_neuron_times[mid_point-10:mid_point+10]
         # psth_spikes = [non_zero_neuron_times[mid_point]]
         # psth_spikes = repeat_test_spikes_gen(non_zero_neuron_times,mid_point,[onset_times[ear_index]],test_duration_ms=75)[0]
 
@@ -143,6 +153,10 @@ for ear_index in range(n_ears):
     if plot_moc:
         plt.figure("moc ear {} test {}".format(ear_index,test_index))
         n_channels = len(moc_att[ear_index])
+        # a = np.sum(moc_att[ear_index][::n_channels/10],axis=0)
+        # a = moc_att[ear_index][n_channels/2]
+        # plt.plot(a)
+        # print "ear {} zero moc spikes {}".format(ear_index,len(np.where(a<1)[0]))
         for i,moc in enumerate(moc_att[ear_index][::n_channels/10]):
         # for i,moc in enumerate(moc_att[ear_index][::1]):
         # for i,moc in enumerate([moc_att[ear_index][n_channels/20]]):
@@ -151,14 +165,15 @@ for ear_index in range(n_ears):
             if 1:#moc.min()<0.9:
                 t = np.linspace(0,duration*1000.,len(moc))
                 plt.plot(t,moc)
+                # plt.plot(moc)
         plt.ylabel("MOC attenuation")
         plt.xlabel("time (ms)")
 
-    if plot_psth:
+    if 0:#plot_psth:
         mid_point = int(len(an_spikes[ear_index]) / 2)
-        psth_spikes = an_spikes[ear_index][mid_point - 100:mid_point + 100]
+        psth_spikes = sg_spikes[ear_index][:]#[mid_point - 100:mid_point + 100]
         psth_plot_8(plt, numpy.arange(len(psth_spikes)), psth_spikes, bin_width=0.25e-3,
-                    duration=duration, ylim=None, title='psth an')
+                    duration=duration, ylim=1000, title='psth an')
 
     if plot_abr:
         # # mem_vs=[sg_mem_v,b_mem_v,t_mem_v,d_mem_v,o_mem_v,moc_mem_v]
