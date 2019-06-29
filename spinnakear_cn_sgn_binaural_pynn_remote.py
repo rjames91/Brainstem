@@ -1,6 +1,8 @@
 import spynnaker8 as sim
 import numpy as np
 import pylab as plt
+import sys
+sys.path.append("../PyNN8Examples")
 from signal_prep import *
 from pyNN.random import NumpyRNG, RandomDistribution
 import os
@@ -72,8 +74,8 @@ auto_max_atoms = False
 
 Fs = 50e3#100000.#
 dBSPL=65#-60#30#
-wav_directory = '/home/rjames/SpiNNaker_devel/OME_SpiNN/'
-input_directory = '/home/rjames/Dropbox (The University of Manchester)/EarProject/Pattern_recognition/spike_trains/IC_spikes'
+wav_directory = '../OME_SpiNN/'
+input_directory = '/tmp/rob_test_results/'
 
 freq = 1000
 mod_freq = 100.
