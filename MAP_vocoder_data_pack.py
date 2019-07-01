@@ -7,53 +7,42 @@ from scipy.io import savemat, loadmat
 from elephant.statistics import isi,cv
 
 # Open the results
-n_fibres = 30000
-dBSPL = 65.
+n_fibres = 1000
+dBSPL = 50
 
 results_directory = '/home/rjames/Dropbox (The University of Manchester)/EarProject/Pattern_recognition/spike_trains/IC_spikes'
 # results_file = "/moc_timit_1s_{}an_fibres_0.1ms_timestep_{}dB_lateralTrue_moc_True.npz".format(n_fibres,int(dBSPL))
-results_file = "/cn_timit_0s_{}an_fibres_0.1ms_timestep_65dB_2s_moc_True_lat_True.npz".format(n_fibres)
+results_file = "/cn_timit_0s_{}an_fibres_0.1ms_timestep_{}dB_3s_moc_True_lat_True.npz".format(n_fibres,dBSPL)
 
 results_data = np.load(results_directory+results_file)
-moc_att = results_data['moc_att']
-an_spikes = results_data['an_spikes']
+an_spikes = [np.flipud(data['spikes']) for data in results_data['ear_data']]
+moc_att = [np.flipud(data['moc']) for data in results_data['ear_data']]
 wav_directory = '../OME_SpiNN/'
 Fs = float(results_data['Fs'])
 
-max_power = min([np.log10(Fs / 2.), 4.25])
-BFs = np.logspace(np.log10(30), max_power, int(n_fibres/10.))
-
-timit_l = generate_signal(signal_type='file',dBSPL=dBSPL,fs=Fs,ramp_duration=0.0025,silence=True,
-                            file_name=wav_directory+'10788_edit.wav',plt=None,channel=0)
-[fs_file,signal] = wavfile.read(wav_directory+'10788_edit.wav')
-
-signal = signal[:,0]
-
-max_val = numpy.max(numpy.abs(signal))
-timit_r = generate_signal(signal_type='file',dBSPL=dBSPL,fs=Fs,ramp_duration=0.0025,silence=True,
-                            file_name=wav_directory+'10788_edit.wav',plt=None,channel=1,max_val=max_val)
-timit = numpy.asarray([timit_l,timit_r])
-
 results_dict = {}
-results_dict['audio_stimulus']=timit
+results_dict['audio_stimulus']= results_data['stimulus']
 results_dict['dBSPL']=dBSPL
 results_dict['Fs']=Fs
 results_dict['an_spikes']=an_spikes
-# moc_att_resampled =[]
-# for i,moc_ear in enumerate(moc_att):
-#     moc_att_resampled.append([])
-#     for moc in moc_ear:
-#         resample_factor = int(Fs / 100.)
-#         # moc_att_resampled[i].append(moc[::resample_factor])
-#         moc_att_resampled[i].append(moc)
+max_power = min([np.log10(Fs / 2.), 4.25])
+results_dict['BFs'] = np.logspace(np.log10(30), max_power, n_fibres/10)
+
+Fs = 1./100e-6
+moc_att_resampled =[]
+for i,moc_ear in enumerate(moc_att):
+    moc_att_resampled.append([])
+    for moc in moc_ear:
+        resample_factor = int(Fs / 1000.)
+        moc_att_resampled[i].append(moc[::resample_factor])
+        # moc_att_resampled[i].append(moc)
 
 #TODO: move resampling to DRNL c code
 
 # plt.figure()
 # plt.plot(moc_att_resampled[0][0])
 # plt.show()
-results_dict['moc_att']=moc_att
-results_dict['BFs']=BFs
-
+# results_dict['moc_att']=moc_att
+results_dict['moc_att']=moc_att_resampled
 
 savemat(results_directory+'/{}_fibres_results'.format(n_fibres),results_dict)
