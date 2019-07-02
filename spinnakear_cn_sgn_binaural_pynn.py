@@ -71,7 +71,7 @@ record_vars = ['spikes']
 auto_max_atoms = False
 
 Fs = 50e3#100000.#
-dBSPL=65#-60#30#
+dBSPL=100#-60#30#
 wav_directory = '/home/rjames/SpiNNaker_devel/OME_SpiNN/'
 input_directory = '/home/rjames/Dropbox (The University of Manchester)/EarProject/Pattern_recognition/spike_trains/IC_spikes'
 
@@ -95,7 +95,7 @@ sam_tone_stereo = np.asarray([tone,tone_r])
 timit_l = generate_signal(signal_type='file',dBSPL=dBSPL,fs=Fs,ramp_duration=0.0025,silence=True,silence_duration=silence_duration,
                             file_name=wav_directory+'10788_edit.wav',plt=None,channel=0)
 [_,signal] = wavfile.read(wav_directory+'10788_edit.wav')
-signal = signal[:,0]
+signal = numpy.float64(signal[:,0])
 max_val=numpy.mean(signal**2)**0.5
 timit_r = generate_signal(signal_type='file',dBSPL=dBSPL,fs=Fs,ramp_duration=0.0025,silence=True,silence_duration=silence_duration,
                             file_name=wav_directory+'10788_edit.wav',plt=None,channel=1,max_val=max_val)
@@ -124,7 +124,7 @@ n_fibres = 1000
 timestep = 0.1#1.0#
 required_total_time = 0.0002#0.2#20#20#0.1#50.#tone_duration#
 
-stimulus_list = ['timit']#["{}Hz_sam_tone{}Hz".format(mod_freq,freq)]#["tone_{}Hz_stereo".format(freq)]#["click"]#['chirp']#
+stimulus_list = ["tone_{}Hz_stereo".format(freq)]#['timit']#["{}Hz_sam_tone{}Hz".format(mod_freq,freq)]#["click"]#['chirp']#
 duration_dict = {}
 test_file = ''
 for stim_string in stimulus_list:
@@ -309,7 +309,7 @@ for ear_index in range(n_ears):
     ear_an_list = [(i,i,w2s_sg,timestep) for i in range(number_of_inputs)]
     ear_an_projs[ear_index]=sim.Projection(input_pops[ear_index],sg_pops[ear_index],sim.FromListConnector(ear_an_list),
                                            synapse_type=sim.StaticSynapse())
-    w2s_t = 1.6#0.8#0.5#0.25#0.1#0.3#0.1#0.7
+    w2s_t = 12.#1.6#0.8#0.5#0.25#0.1#0.3#0.1#0.7
     n_an_t_connections = RandomDistribution('uniform',[4.,6.])
     av_an_t = w2s_t/5.
     # an_t_weight = RandomDistribution('uniform',[0,av_an_t*2])
