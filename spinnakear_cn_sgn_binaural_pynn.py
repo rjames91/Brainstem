@@ -21,6 +21,7 @@ octopus_params_cond_izh = {
                'tau_syn_E': 0.2,#0.35,#2.5,#
                'e_rev_E': 30.,#-10.,#-55.,#-35.,#-55.1,#
                'v': -70.,
+               # 'i_offset':0.5
                }
 
 bushy_params_cond = {#'cm': 5.,#57.,  # nF Only 200 cells in mouse CN
@@ -43,9 +44,10 @@ t_stellate_izk_class_2_params = {
 }
 n_dds = 10
 d_ds = np.logspace(np.log10(10),np.log10(50),n_dds)
-d_ds = np.linspace(10,50,n_dds)
+# d_ds = np.linspace(10,50,n_dds)
+d_ds = np.linspace(2,10,n_dds)
 d_stellate_izk_class_1_params = {
-               'a':0.05,#0.02,
+               'a':0.02,#0.05,#
                'b':-0.1,
                'c':-55,
                'd':4,
@@ -57,41 +59,40 @@ d_stellate_izk_class_1_params = {
 }
 moc_lts_params = {
     'a': 0.02,
-    'b': 0.25,
+    'b': 0.2,
     'c': -65,
-    'd':2,
+    'd': 0.5,
     'u': -10,
     'v': -65,
+    'tau_syn_E': 2.
 }
-conn_pre_gen = False
+conn_pre_gen = True
 lateral = True
 moc_feedback = True
-record_en = True
+record_en = False
 record_vars = ['spikes']
 auto_max_atoms = False
 
 Fs = 50e3#100000.#
-dBSPL=100#-60#30#
+dBSPL=50#-60#30#
 wav_directory = '/home/rjames/SpiNNaker_devel/OME_SpiNN/'
 input_directory = '/home/rjames/Dropbox (The University of Manchester)/EarProject/Pattern_recognition/spike_trains/IC_spikes'
 
 freq = 1000
-mod_freq = 100.
-tone_duration = 0.1
-silence_duration = 0.2#0.025 #0.075#
+mod_freq = 50.
+tone_duration = 0.1#1.
+silence_duration = 0.025 #0.1#0.075#
 tone = generate_signal(freq=freq,dBSPL=dBSPL,duration=tone_duration,
                        modulation_freq=0.,fs=Fs,ramp_duration=0.005,plt=None,silence=True,silence_duration=silence_duration)
 tone_r = generate_signal(freq=freq,dBSPL=dBSPL,duration=tone_duration,
                        modulation_freq=0.,fs=Fs,ramp_duration=0.005,plt=None,silence=True,silence_duration=silence_duration)
 tone_stereo = np.asarray([tone,tone_r])
 
-tone = generate_signal(freq=freq,dBSPL=dBSPL,duration=tone_duration,
+tone_s = generate_signal(freq=freq,dBSPL=dBSPL,duration=tone_duration,
                        modulation_freq=mod_freq,fs=Fs,ramp_duration=0.005,plt=None,silence=True,silence_duration=silence_duration)
-tone_r = generate_signal(freq=mod_freq,dBSPL=dBSPL,duration=tone_duration,
-                       modulation_freq=0.,fs=Fs,ramp_duration=0.005,plt=None,silence=True,silence_duration=silence_duration)
-sam_tone_stereo = np.asarray([tone,tone_r])
-
-
+tone_sr = generate_signal(freq=freq,dBSPL=dBSPL,duration=tone_duration,
+                       modulation_freq=mod_freq,fs=Fs,ramp_duration=0.005,plt=None,silence=True,silence_duration=silence_duration)
+sam_tone_stereo = np.asarray([tone_s,tone_sr])
 timit_l = generate_signal(signal_type='file',dBSPL=dBSPL,fs=Fs,ramp_duration=0.0025,silence=True,silence_duration=silence_duration,
                             file_name=wav_directory+'10788_edit.wav',plt=None,channel=0)
 [_,signal] = wavfile.read(wav_directory+'10788_edit.wav')
@@ -102,8 +103,18 @@ timit_r = generate_signal(signal_type='file',dBSPL=dBSPL,fs=Fs,ramp_duration=0.0
 timit = numpy.asarray([timit_l,timit_r])
 
 noise_dur = timit_l.size / Fs
-noise = generate_signal(signal_type='noise',dBSPL=dBSPL,duration=noise_dur,
-                       modulation_freq=0.,modulation_depth=1.,fs=Fs,ramp_duration=0.0025,plt=None,silence=True,silence_duration=silence_duration)
+noise_power = dBSPL-10
+# tone_noise = generate_signal(signal_type='noise',dBSPL=noise_power,duration=(tone_duration+2*silence_duration)-50e-3,
+#                        modulation_freq=0.,modulation_depth=1.,fs=Fs,ramp_duration=0.005,plt=None,silence=True,silence_duration=25e-3)
+# tone_noise = generate_signal(signal_type='file',dBSPL=noise_power,fs=Fs,ramp_duration=0.05,silence=False,
+#                             file_name='./tone_noise.wav',plt=None)
+# tone_in_noise = np.asarray([tone_noise + tone, tone_noise + tone])
+# timit_noise = generate_signal(signal_type='noise',dBSPL=noise_power,duration=((len(timit_l))/Fs)-50e-3,
+#                        modulation_freq=0.,modulation_depth=1.,fs=Fs,ramp_duration=0.005,plt=None,silence=True,silence_duration=25e-3)
+# filt_timit_noise=butter_bandpass_filter(timit_noise, 200., 6000., Fs, order=6)
+# timit_noise = generate_signal(signal_type='file',dBSPL=noise_power,fs=Fs,ramp_duration=0.025,silence=False,
+#                             file_name='./timit_noise.wav',plt=None)
+# timit_in_noise = np.asarray([timit_noise + timit_l, timit_noise + timit_r])
 
 click = generate_signal(signal_type='click',fs=Fs,dBSPL=dBSPL,duration=0.001,ramp_duration=0.0001,plt=None,silence=True,silence_duration=silence_duration)
 click_stereo = np.asarray([click,click])
@@ -111,20 +122,25 @@ click_stereo = np.asarray([click,click])
 chirp = generate_signal(signal_type='sweep_tone',freq=[30,18e3],fs=Fs,dBSPL=dBSPL,duration=1.-(0.075*2),plt=None,silence=True,silence_duration=0.075)
 chirp_stereo = np.asarray([chirp,chirp])
 
+noise = generate_signal(signal_type='noise',dBSPL=-20,duration=1.,
+                       modulation_freq=0.,modulation_depth=1.,fs=Fs,ramp_duration=0.005,plt=None,silence=False)
+
 sounds_dict = {
                 "tone_{}Hz".format(freq):tone,
                 "tone_{}Hz_stereo".format(freq):tone_stereo,
                 "timit":timit,
-                "noise":noise,
+                # "tone_{}Hz_in_{}dB_noise".format(freq,noise_power): tone_in_noise,
+                # "timit_in_{}dB_noise".format(noise_power):timit_in_noise,
+                "noise":np.asarray([noise,noise]),
                 "click":click_stereo,
                 "chirp":chirp_stereo,
                 "{}Hz_sam_tone{}Hz".format(mod_freq,freq):sam_tone_stereo
 }
-n_fibres = 1000
+n_fibres = int(30e3*1.)
 timestep = 0.1#1.0#
-required_total_time = 0.0002#0.2#20#20#0.1#50.#tone_duration#
+required_total_time = 0.0002#0.5#7.#0.2#20#20#0.1#50.#tone_duration#
 
-stimulus_list = ["tone_{}Hz_stereo".format(freq)]#['timit']#["{}Hz_sam_tone{}Hz".format(mod_freq,freq)]#["click"]#['chirp']#
+stimulus_list = ["tone_{}Hz_stereo".format(freq)]#["tone_{}Hz_in_{}dB_noise".format(freq,noise_power)]#["noise"]#["timit_in_{}dB_noise".format(noise_power)]#['timit']#["noise"]#"["click"]#['chirp']#["{}Hz_sam_tone{}Hz".format(mod_freq,freq)]#
 duration_dict = {}
 test_file = ''
 for stim_string in stimulus_list:
@@ -175,7 +191,7 @@ while 1:
         break
 
 max_time = 1000. * (len(audio_data[0]) / Fs)
-duration = max_time * 1.1
+duration = max_time #* 1.1
 print "simulation real time = {}s".format(duration*0.001)
 # duration = 1000.
 n_ears = num_channels
@@ -219,6 +235,8 @@ b_data = [[] for _ in range(n_ears)]
 o_data = [[] for _ in range(n_ears)]
 moc_data = [[] for _ in range(n_ears)]
 ear_data = [[] for _ in range(n_ears)]
+profile_data = [[] for _ in range(n_ears)]
+
 # an_spikes = [[] for _ in range(n_ears)]
 # moc_att = [[] for _ in range(n_ears)]
 
@@ -243,6 +261,7 @@ n_t = int(n_total * 2./3 * 24./89)
 n_d = int(n_total * 1./3 * 24./89)
 n_b = int(n_total * 55./89)#number_of_inputs#
 n_o = int(n_total * 10./89.)
+
 # n_moc = int(n_fibres * (360/30e3))
 # n_moc = int(n_fibres)
 n_moc = 360
@@ -254,7 +273,7 @@ n_chips_required = naive_n_chips_calc(n_fibres/10,n_ears,[(n_t,max_neurons_per_c
                                                           (n_b,max_neurons_per_core),(n_o,max_neurons_per_core),
                                                           (n_moc,max_neurons_per_core)])
 time_start = local_time.time()
-sim.setup(timestep=timestep,n_chips_required=n_chips_required)
+sim.setup(timestep=timestep)#,n_chips_required=n_chips_required)
 
 sim.set_number_of_neurons_per_core(sim.IF_cond_exp,max_neurons_per_core)
 sim.set_number_of_neurons_per_core(sim.extra_models.Izhikevich_cond,max_neurons_per_core)
@@ -262,12 +281,13 @@ sim.set_number_of_neurons_per_core(sim.extra_models.Izhikevich_cond,max_neurons_
 for ear_index in range(n_ears):
     number_of_inputs = n_fibres
 
-    spinnakear_param_file = input_directory+'/spinnakear_params_ear{}_{}fibres.npz'.format(ear_index,n_fibres)
+    spinnakear_param_file = None#input_directory+'/spinnakear_params_ear{}_{}fibres.npz'.format(ear_index,n_fibres)
     spinnakear_objects[ear_index] = SpiNNakEar(audio_input=audio_data[ear_index],fs=Fs,
                                                                      n_channels=number_of_inputs/10,
                                                                      pole_freqs=None,param_file=spinnakear_param_file,ear_index=ear_index,duration=duration)#freq*np.ones(number_of_inputs/10))
     input_pops[ear_index]=sim.Population(number_of_inputs,spinnakear_objects[ear_index],label="AN_Pop_ear{}".format(ear_index))
     input_pops[ear_index].record(['spikes','moc'])
+    # input_pops[ear_index].record(['debug_values','moc'])
     sg_pops[ear_index]=sim.Population(number_of_inputs,sim.IF_cond_exp,{'tau_m':5.,'tau_syn_E':0.1},label="SG_Pop_ear_fixed_weight_scale_cond{}".format(ear_index))
 
     #================================================================================================
@@ -280,27 +300,34 @@ for ear_index in range(n_ears):
         d_stellate_izk_class_1_params['d']=d_ds[dd]
         d_pops[ear_index][dd]=sim.Population(n_sub_d,sim.extra_models.Izhikevich_cond,d_stellate_izk_class_1_params,
                                              label="d_stellate_fixed_weight_scale_cond{}".format(ear_index))
+        n_per = min([n_sub_d,max_neurons_per_core])
+        d_pops[ear_index][dd].set_constraint(MaxVertexAtomsConstraint(int(n_per/5.)))
+        print "per core d={}".format(int(n_per/5.))
 
     for td in range(n_tds):
         t_stellate_izk_class_2_params['d']=t_ds[td]
         t_pops[ear_index][td] = sim.Population(n_sub_t, sim.Izhikevich, t_stellate_izk_class_2_params,
                                            label="t_stellate_fixed_weight_scale{}".format(ear_index))
+        n_per = min([n_sub_t,max_neurons_per_core])
+        t_pops[ear_index][td].set_constraint(MaxVertexAtomsConstraint(int(n_per/ 4.5)))
+        print "per core t={}".format(int(n_per / 4.5))
     #spherical bushy
     b_pops[ear_index]=sim.Population(n_b,sim.IF_cond_exp,bushy_params_cond,label="bushy_fixed_weight_scale_cond{}".format(ear_index))
-
+    b_pops[ear_index].set_constraint(MaxVertexAtomsConstraint(int(255. / 2.5)))
     o_pops[ear_index]=sim.Population(n_o,sim.extra_models.Izhikevich_cond,octopus_params_cond_izh,label="octopus_fixed_weight_scale_cond{}".format(ear_index))
+    o_pops[ear_index].set_constraint(MaxVertexAtomsConstraint(int(255. / 4.5)))
     moc_pops[ear_index] = sim.Population(n_moc, sim.Izhikevich, moc_lts_params, label="moc{}".format(ear_index))
     # moc_pops[ear_index] = sim.Population(n_moc, sim.IF_cond_exp, moc_params, label="moc_fixed_weight_scale_cond{}".format(ear_index))
 
-    sg_pops[ear_index].record(record_vars)
-    b_pops[ear_index].record(record_vars)
-    for pop in t_pops[ear_index]:
-        pop.record(record_vars)
-    o_pops[ear_index].record(record_vars)
-    moc_pops[ear_index].record(record_vars)
-    for pop in d_pops[ear_index]:
-        pop.record(record_vars)
-
+    if record_en:
+        sg_pops[ear_index].record(record_vars)
+        b_pops[ear_index].record(record_vars)
+        for pop in t_pops[ear_index]:
+            pop.record(record_vars)
+        o_pops[ear_index].record(record_vars)
+        moc_pops[ear_index].record(record_vars)
+        for pop in d_pops[ear_index]:
+            pop.record(record_vars)
 
     #================================================================================================
     # AN --> CN Projections
@@ -333,14 +360,15 @@ for ear_index in range(n_ears):
     # n_an_d_connections = RandomDistribution('uniform',[11.,88.])
     n_an_d_connections = RandomDistribution('normal_clipped',[60.,5.,11.,88.])#estimation of upper and lower bounds Manis 2017
     w2s_d = 1.#0.75#1.5#0.3#1.#0.5#
-    av_an_d = w2s_d/88.#w2s_d/60.#
+    av_an_d = w2s_d/60.#w2s_d/88.#
     # an_d_weight = RandomDistribution('uniform',[0,av_an_d])
     an_d_weight = RandomDistribution('normal_clipped',[av_an_d,0.1*av_an_d,0,av_an_d*2.])
     if conn_pre_gen:
         an_d_list = connection_dicts[ear_index]['an_d_list']
     else:
         an_d_master,max_dist = normal_dist_connection_builder(number_of_inputs,n_d,RandomDistribution,conn_num=n_an_d_connections,dist=1.,
-                                           sigma=pop_size/15.,conn_weight=an_d_weight,delay=timestep,normalised_space=pop_size,get_max_dist=True)
+                                           # sigma=pop_size/15.,conn_weight=an_d_weight,delay=timestep,normalised_space=pop_size,get_max_dist=True)
+                                           sigma=pop_size/20.,conn_weight=an_d_weight,delay=timestep,normalised_space=pop_size,get_max_dist=True)
         d_incoming[ear_index].append(max_dist*(float(number_of_inputs)/pop_size))
         an_d_list = [[] for _ in range(n_dds)]
         for (pre, post, w, d) in an_d_master:
@@ -376,7 +404,7 @@ for ear_index in range(n_ears):
     else:
         an_o_list,max_dist = normal_dist_connection_builder(number_of_inputs, n_o, RandomDistribution,
                                                    conn_num=n_an_o_connections, dist=1.,
-                                                   sigma=pop_size/20., conn_weight=an_o_weight,delay=1.,
+                                                   sigma=pop_size/20., conn_weight=an_o_weight,delay=timestep,
                                                    normalised_space=pop_size,get_max_dist=True)
         o_incoming[ear_index].append(max_dist*(float(number_of_inputs)/pop_size))
     an_o_projs[ear_index] = sim.Projection(sg_pops[ear_index], o_pops[ear_index], sim.FromListConnector(an_o_list),
@@ -526,7 +554,7 @@ for ear_index in range(n_ears):
         # ================================================================================================
         # CN --> VNTB Projections
         # ================================================================================================
-        w2s_moc = 10.#0.2#0.6#0.15#0.1#0.05#0.75
+        w2s_moc = 20.#30.#5.#10.#0.2#0.6#0.15#0.1#0.05#0.75
         # n_t_moc_connections = RandomDistribution('uniform', [5, 10])
         av_t_moc_connections = 10#int(np.ceil(float(n_t)/n_moc))
         n_t_moc_connections = RandomDistribution('normal_clipped',
@@ -669,6 +697,18 @@ if auto_max_atoms:
 max_period = 6000.
 num_recordings =1#int((duration/max_period)+1)
 
+# #HACK empty SSA to all pops to pass bitfield test
+# ssa_pop = sim.Population(1,sim.SpikeSourceArray(spike_times=[]))
+# for ea in range(n_ears):
+#     sim.Projection(ssa_pop,sg_pops[ea],sim.AllToAllConnector())
+#     sim.Projection(ssa_pop,b_pops[ea],sim.AllToAllConnector())
+#     sim.Projection(ssa_pop,o_pops[ea],sim.AllToAllConnector())
+#     sim.Projection(ssa_pop,moc_pops[ea],sim.AllToAllConnector())
+#     for di in range(n_tds):
+#         sim.Projection(ssa_pop,t_pops[ea][di],sim.AllToAllConnector())
+#         sim.Projection(ssa_pop,d_pops[ea][di],sim.AllToAllConnector())
+
+
 for i in range(num_recordings):
     sim.run(duration/num_recordings)
 
@@ -692,12 +732,31 @@ if record_en is True:
         o_data[ear_index] = o_pops[ear_index].get_data(record_vars)
         # o_spikes[ear_index] = o_data.segments[0].spiketrains
         moc_data[ear_index] = moc_pops[ear_index].get_data(record_vars)
-        # moc_spikes[ear_index] = moc_data.segments[0].spiketrains
-
-        # ear_data = input_pops[ear_index].get_data(['spikes'])
+        # # moc_spikes[ear_index] = moc_data.segments[0].spiketrains
+        #
+        # # ear_data = input_pops[ear_index].get_data(['spikes'])
         ear_data[ear_index] = input_pops[ear_index].get_data(['spikes','moc'])
-        # an_spikes[ear_index] = ear_data['spikes']
-        # moc_att[ear_index] = ear_data['moc']
+        # ear_data[ear_index] = input_pops[ear_index].get_data(['debug','moc'])
+        # # an_spikes[ear_index] = ear_data['spikes']
+        # # moc_att[ear_index] = ear_data['moc']
+        #
+        # vs = ['ome', 'drnl', 'ihc']
+        # vs = ['drnl']
+        # profile_data[ear_index] = spinnakear_objects[ear_index].get_profile_data(vs)
+        # plt.figure("profile {}".format(ear_index))
+        # profile_legend = []
+        # colours = ['g', 'b', 'r']
+        # for ci, v in enumerate(vs):
+        #     a = profile_data[ear_index][v]
+        #     profile_legend.append(plt.Line2D([0], [0], color=colours[ci], lw=2))
+        #     for i in range(len(a)):
+        #         plt.plot(1e3 * (a[i] / 8.), color=colours[ci])
+        # plt.plot(np.ones(len(a[0])) * (1. / 22e3) * 1e6, color='k', linestyle='dashed')
+        # profile_legend.append(plt.Line2D([0], [0], color='k', lw=2, linestyle='dashed'))
+        # vs.append('real time')
+        # plt.legend(profile_legend, vs)
+        # plt.xlabel("segment index")
+        # plt.ylabel("execution time ($\mu$s)")
 
         # neuron_title_list = ['t_stellate', 'd_stellate', 'bushy', 'octopus','moc','an']
         # neuron_list = [t_spikes, d_spikes, b_spikes, o_spikes,moc_spikes]#,an_spikes]
@@ -761,13 +820,9 @@ print "simulation of {}s complete in {}s".format(duration/1000.,local_time.time(
 # plt.hist(single_isi)
 
 if record_en:
-    # np.savez_compressed(input_directory+'/cn_' + test_file + '_{}an_fibres_{}ms_timestep_{}dB_{}s_moc_{}_lat_{}'.format
-    #                      (number_of_inputs,timestep,dBSPL,int(duration/1000.),moc_feedback,lateral),an_spikes=an_spikes,
-    #                      t_spikes=t_spikes,d_spikes=d_spikes,b_spikes=b_spikes,o_spikes=o_spikes,moc_spikes=moc_spikes,onset_times=onset_times,
-    #                     moc_att=moc_att,Fs=Fs,stimulus=audio_data)
     np.savez_compressed(input_directory+'/cn_' + test_file + '_{}an_fibres_{}ms_timestep_{}dB_{}s_moc_{}_lat_{}'.format
                          (number_of_inputs,timestep,dBSPL,int(duration/1000.),moc_feedback,lateral),ear_data=ear_data,sg_data=sg_data,
                          t_data=t_data,d_data=d_data,b_data=b_data,o_data=o_data,moc_data=moc_data,onset_times=onset_times,
-                         Fs=Fs,stimulus=audio_data)
+                         Fs=Fs,stimulus=audio_data,profile_data=profile_data)
 
     plt.show()
