@@ -66,7 +66,7 @@ moc_lts_params = {
     'v': -65,
     'tau_syn_E': 2.
 }
-conn_pre_gen = True
+conn_pre_gen = False
 lateral = True
 moc_feedback = True
 record_en = False
@@ -302,7 +302,6 @@ for ear_index in range(n_ears):
                                              label="d_stellate_fixed_weight_scale_cond{}".format(ear_index))
         n_per = min([n_sub_d,max_neurons_per_core])
         d_pops[ear_index][dd].set_constraint(MaxVertexAtomsConstraint(int(n_per/5.)))
-        print "per core d={}".format(int(n_per/5.))
 
     for td in range(n_tds):
         t_stellate_izk_class_2_params['d']=t_ds[td]
@@ -310,7 +309,6 @@ for ear_index in range(n_ears):
                                            label="t_stellate_fixed_weight_scale{}".format(ear_index))
         n_per = min([n_sub_t,max_neurons_per_core])
         t_pops[ear_index][td].set_constraint(MaxVertexAtomsConstraint(int(n_per/ 4.5)))
-        print "per core t={}".format(int(n_per / 4.5))
     #spherical bushy
     b_pops[ear_index]=sim.Population(n_b,sim.IF_cond_exp,bushy_params_cond,label="bushy_fixed_weight_scale_cond{}".format(ear_index))
     b_pops[ear_index].set_constraint(MaxVertexAtomsConstraint(int(255. / 2.5)))
