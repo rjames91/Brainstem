@@ -200,12 +200,12 @@ t_stellate_izk_class_2_params = {
                'a':0.4,#0.2,#0.02,#
                'b':0.26,#0.26,#0.4,#
                'c':-65,
-               'd':1,
+               'd':150,
                'u':0,#-15,
                'tau_syn_E':4,#0.94,#3.0,#
-               'tau_syn_I': 4.0,#2.5,#
+               'tau_syn_I': 2.5,#4.0,#
                'v': -63.0,
-               # 'i_offset':18.,
+               'i_offset':20.,
                # 'e_rev_E': 30.
 }
 
@@ -220,6 +220,48 @@ d_stellate_izk_class_1_params = {
                'tau_syn_I':4.,
                'v': -63.0,
 }
+d_stellate_izk_class_2_params = {
+               'a':0.2,#0.02,#
+               'b':0.26,
+               'c':-65,
+               #'d':8,
+               'u':-10,#-15,
+               'tau_syn_E':1.6,#2.,#0.94,#
+               'tau_syn_I': 4.0,#2.5,#
+               'v': -63.0,
+}
+moc_lts_params = {
+    'a': 0.02,
+    'b': 0.25,
+    'c': -65,
+    'd': 1.,
+    'u': -15,
+    'v': -65,
+    'tau_syn_E': 2.,
+    # 'i_offset':4,
+    # 'tau_syn_E': 0.5,
+}
+
+moc_rs_params = {
+    'a': 0.02,
+    'b': 0.2,
+    'c': -65,
+    'd': 8,
+    'u': -15,
+    'v': -70,
+    # 'tau_syn_E': 0.5,
+}
+octopus_params_cond_izh = {
+                'a':0.02,
+                'b':0.25,#0.1,#
+                'c':-65,
+                'd':2,
+                'u':-5,
+               'tau_syn_E': 0.2,#0.35,#2.5,#
+               'e_rev_E': 30.,#-10.,#-55.,#-35.,#-55.1,#
+               'v': -70.,
+               'i_offset':0.5
+               }
 
 dB = 50#20
 input_directory = '/home/rjames/Dropbox (The University of Manchester)/EarProject/Pattern_recognition/spike_trains/IC_spikes'
@@ -243,11 +285,11 @@ for i in range(n_inputs):
 #     an_spikes.append([10. + (5. * (np.random.rand()-0.5))])
 # an_spikes = cochlea_file['scaled_times']
 target_pop_size =1
-w2s_target = 1.5#10.#1.6# 0.06#0.3#0.5#0.1#0.2#3.#0.7#1.#15.#0.005#0.0015#0.0006#1.5#4.5#0.12#2.5#5.
+w2s_target =1.5#15.#5.#12.# 3.#15.#.5#
 # n_connection = 120.#50#100
 n_connections = RandomDistribution('uniform',[30.,120.])
 # connection_weight = w2s_target/n_connections#w2s_target#initial_weight*2.#/2.
-av_weight =w2s_target/n_inputs#/30.#w2s_target/90.# w2s_target/n_connections#
+av_weight =w2s_target#/n_inputs#/30.#w2s_target/90.# w2s_target/n_connections#
 
 #plt.hist(connection_weight.next(1000),bins=100)
 #plt.show()
@@ -277,7 +319,7 @@ sim.setup(timestep=0.1)
 # Populations
 #================================================================================================
 input_pops=[]
-# input_spikes = [10.]
+input_spikes = [5.]
 input_pop = sim.Population(n_inputs,sim.SpikeSourceArray(spike_times=input_spikes),label="an_pop_input")
 # input_pop_2 = sim.Population(n_inputs,sim.SpikeSourceArray(spike_times=input_spikes),label="an_pop_input")
 # input_pop = sim.Population(n_inputs,sim.SpikeSourcePoisson(rate=0.,duration=test_dur_ms*0.4),label="an_pop_input")
@@ -287,23 +329,27 @@ input_pop = sim.Population(n_inputs,sim.SpikeSourceArray(spike_times=input_spike
 # cd_pop = sim.Population(target_pop_size,sim.IF_curr_exp,one_to_one_cond_params,label="fixed_weight_scale")
 
 # cd_pop = sim.Population(target_pop_size,sim.extra_models.Izhikevich_cond,{},label="fixed_weight_scale_cond")
-cd_pop = sim.Population(target_pop_size,sim.Izhikevich,{},label="fixed_weight_scale_cond")
+# cd_pop = sim.Population(target_pop_size,sim.Izhikevich,moc_lts_params,label="moc")
 # cd_pop = sim.Population(target_pop_size,sim.extra_models.Izhikevich_cond,octopus_params_cond_izh,label="fixed_weight_scale_cond")
-# cd_pop = sim.Population(target_pop_size,sim.IF_cond_exp,moc_lif_params,label="fixed_weight_scale_cond")
+# cd_pop = sim.Population(target_pop_size,sim.IF_cond_exp,{'tau_m':5.,'tau_syn_E':0.1},label="fixed_weight_scale_cond")
+# cd_pop = sim.Population(target_pop_size,sim.IF_cond_exp,{'tau_m':5.,'tau_syn_E':0.1},label="fixed_weight_scale_cond")
 # cd_pop = sim.Population(1,sim.extra_models.Izhikevich_cond,t_stellate_izk_class_2_params,label="fixed_weight_scale_cond")
 # cd_pop = sim.Population(1,sim.extra_models.Izhikevich_cond,t_stellate_izk_class_2_params,label="fixed_weight_scale_cond")
 # t_stellate_izk_class_2_params['d']=100
 # t_stellate_izk_class_2_params['i_offset']=50
 # octopus_params_cond_izh['i_offset']=50
 # octopus_lif_params['i_offset']=50
-cd_pop_2 = sim.Population(1,sim.extra_models.Izhikevich_cond,d_stellate_izk_class_1_params,label="fixed_weight_scale_cond")
-# cd_pop_2 = sim.Population(1,sim.Izhikevich,d_stellate_izk_class_1_params,label="fixed_weight_scale_cond")
-# cd_pop_2 = sim.Population(1,sim.IF_cond_exp,octopus_lif_params,label="fixed_weight_scale_cond")
+# cd_pop_2 = sim.Population(1,sim.extra_models.Izhikevich_cond,d_stellate_izk_class_1_params,label="fixed_weight_scale_cond")
+# cd_pop = sim.Population(1,sim.Izhikevich,moc_lts_params,label="fixed_weight_scale")
+# cd_pop = sim.Population(1,sim.Izhikevich,moc_lts_params,label="moc")
+# cd_pop = sim.Population(1,sim.Izhikevich,d_stellate_izk_class_2_params,label="moc")
+cd_pop = sim.Population(1,sim.extra_models.Izhikevich_cond,octopus_params_cond_izh,label="fixed_weight_scale_cond")
 # cd_pop_2 = sim.Population(1,sim.IF_cond_exp,{'tau_m':5.,'tau_syn_E':0.1},label="fixed_weight_scale_cond")
+# cd_pop_2 = sim.Population(1,sim.IF_cond_exp,{'tau_m':1.},label="fixed_weight_scale_cond")
 # cd_pop_2 = sim.Population(1,sim.IF_cond_exp,{'tau_m':20.,'tau_syn_E': 0.94,'v_thresh':-40},label="fixed_weight_scale_cond")
 # cd_pop = sim.Population(target_pop_size,sim.IF_cond_exp,{'tau_m':20.,'cm':2.,'i_offset':20.},label="fixed_weight_scale_cond")
 # cd_pop_2 = sim.Population(target_pop_size,sim.IF_cond_exp,{'tau_m':20.,'cm':2.,'i_offset':30.},label="fixed_weight_scale_cond")
-# cd_pop = sim.Population(target_pop_size,sim.extra_models.Izhikevich_cond,{'v':-65,'d':6,'i_offset':20.},label="fixed_weight_scale_cond")
+cd_pop_2 = sim.Population(target_pop_size,sim.extra_models.Izhikevich_cond,{'v':-65,'d':6,'i_offset':20.},label="fixed_weight_scale_cond")
 # cd_pop = sim.Population(1,sim.IF_curr_exp,on_params,label="fixed_weight_scale")
 # cd_pop = sim.Population(1,sim.IF_curr_exp,inh_params,label="fixed_weight_scale")
 # inh_pop =
@@ -388,15 +434,29 @@ print "w2s",w2s_target
 # psth_plot_8(plt, numpy.arange(len(cd_data.segments[0].spiketrains)),cd_data.segments[0].spiketrains , bin_width=0.25 / 1000.,
 #             duration=duration/1000., title='psth output')
 # title = "Izhikevich neuron"
-for i in range(1,2):
-    title = "LIF neuron_{}".format(i)
-    plt.figure(title)
-    spike_raster_plot_8(cd_data[i].segments[0].spiketrains,plt,duration/1000.,1+1,0.001,title=title,subplots=(3,1,1))
-    mem_v = cd_data[i].segments[0].filter(name='v')
-    cell_voltage_plot_8(mem_v, plt, duration, [],scale_factor=0.0001,title="",subplots=(3,1,2))
-    plt.ylabel("membrane voltage (mV)")
-    gsyn = cd_data[i].segments[0].filter(name='gsyn_exc')
-    cell_voltage_plot_8(gsyn, plt, duration, [],scale_factor=0.0001,title="",subplots=(3,1,3))
+# for i in range(1):
+#     title = "LIF neuron_{}".format(i)
+#     plt.figure(title)
+#     spike_raster_plot_8(cd_data[i].segments[0].spiketrains,plt,duration/1000.,1+1,0.001,title=title,subplots=(3,1,1))
+#     mem_v = cd_data[i].segments[0].filter(name='v')
+#     cell_voltage_plot_8(mem_v, plt, duration, [],scale_factor=0.0001,title="",subplots=(3,1,2))
+#     plt.ylabel("membrane voltage (mV)")
+#     gsyn = cd_data[i].segments[0].filter(name='gsyn_exc')
+#     cell_voltage_plot_8(gsyn, plt, duration, [],scale_factor=0.0001,title="",subplots=(3,1,3))
+
+title = "LTS Izhikevich neuron"
+plt.figure(title)
+mem_v = cd_data[0].segments[0].filter(name='v')
+cell_voltage_plot_8(mem_v, plt, duration, [],scale_factor=0.0001,title="",subplots=(1,1,1))
+spikes = cd_data[0].segments[0].spiketrains[0]
+spike_times= [s.item() / 1000. for s in spikes]
+ax = plt.gca()
+limits = ax.get_ylim()
+plt.ylim((limits[0],20))
+for xc in spike_times:
+    plt.axvline(x=xc,color='r')
+plt.ylabel("membrane voltage (mV)")
+plt.title(title)
 
 # spike_raster_plot_8(input_spikes,plt,duration/1000.,1+1,0.001,title='input')
 #

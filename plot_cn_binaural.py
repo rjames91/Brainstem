@@ -10,7 +10,7 @@ import quantities as pq
 plot_spikes = True
 plot_moc = False
 plot_isi = False
-plot_isi_scattergram = True
+plot_isi_scattergram = False
 plot_isi_cv = False
 plot_psth = False
 plot_abr = False
@@ -33,14 +33,24 @@ test_index = 1
 # results_file = "/cn_tone_1000Hz_stereo_0s_1000an_fibres_0.1ms_timestep_100dB_0s_moc_True_lat_True.npz"
 # results_file = "/cn_timit_0s_1000an_fibres_0.1ms_timestep_0dB_3s_moc_True_lat_True.npz"
 # results_file = "/cn_tone_1000Hz_stereo_0s_1000an_fibres_0.1ms_timestep_50dB_0s_moc_True_lat_True.npz"
-results_file = "/cn_50.0Hz_sam_tone1000Hz_0s_1000an_fibres_0.1ms_timestep_50dB_0s_moc_True_lat_True.npz"
+#results_file = "/cn_50.0Hz_sam_tone1000Hz_0s_1000an_fibres_0.1ms_timestep_20dB_1s_moc_True_lat_True.npz"
 # results_file = "/cn_tone_1000Hz_stereo_0s_1000an_fibres_0.1ms_timestep_65dB_0s_moc_True_lat_True_{}.npz".format(test_index)
+
+# results_file = "/cn_timit_0s_3000an_fibres_0.1ms_timestep_50dB_2s_moc_True_lat_True.npz"
+# no_moc_results_file = "/cn_timit_0s_1000an_fibres_0.1ms_timestep_50dB_2s_moc_False_lat_True.npz"
+freq = 4000
+# results_file = "/cn_tone_{}Hz_stereo_0s_3000an_fibres_0.1ms_timestep_80dB_0s_moc_True_lat_True.npz".format(freq)
+# results_file = "/cn_chirp_0s_1000an_fibres_0.1ms_timestep_50dB_1s_moc_False_lat_True.npz"
+results_file ="/cn_tone_{}Hz_stereo_0s_3000an_fibres_0.1ms_timestep_50dB_0s_moc_True_lat_True.npz".format(freq)
+no_moc_results_file = "/cn_tone_{}Hz_stereo_0s_1000an_fibres_0.1ms_timestep_100dB_0s_moc_False_lat_True.npz".format(freq)
+
 n_ears = 2
 
 # duration = binaural_audio_data[0].size/Fs
 recording_vars = ['spikes']
-
+results_file='/cn_tone_1000Hz_stereo_0s_3000an_fibres_0.1ms_timestep_90dB_0s_moc_True_lat_True.npz'
 results_data = np.load(results_directory+results_file)
+# results_data = np.load('./cn_tone_1000Hz_stereo_15s_30000an_fibres_0.1ms_timestep_80dB_16s_moc_True_lat_True.npz')
 Fs = results_data['Fs']
 
 sg_spikes = [data.segments[0].spiketrains for data in results_data['sg_data']]
@@ -54,9 +64,31 @@ b_spikes = [data.segments[0].spiketrains for data in results_data['b_data']]
 o_spikes = [data.segments[0].spiketrains for data in results_data['o_data']]
 moc_spikes = [data.segments[0].spiketrains for data in results_data['moc_data']]
 an_spikes = [data['spikes'] for data in results_data['ear_data']]
-moc_att = [data['moc'] for data in results_data['ear_data']]
+# moc_att = [data['moc'] for data in results_data['ear_data']]
+# moc_vrr = [data['debug'] for data in results_data['ear_data']]
 onset_times = results_data['onset_times'][0]
 stimulus = results_data['stimulus']
+# duration = len(stimulus[0])/Fs
+duration = 150e-3
+
+# no_moc_results_data = np.load(results_directory+no_moc_results_file)
+# no_moc_vrr = [data['debug'] for data in no_moc_results_data['ear_data']]
+# max_val = [0,0]
+# for ear_index in range(n_ears):
+#     diff = moc_vrr[ear_index]-no_moc_vrr[ear_index]
+#     for d in diff:
+#         if np.abs(d).max()>max_val[ear_index]:
+#             max_val[ear_index]=np.abs(d).max()
+#         plt.figure("vrr diff {}".format(ear_index))
+#         t = np.linspace(0, duration * 1000., len(d))
+#         plt.plot(t, d)
+#     plt.figure("spikes ear{}".format(ear_index))
+#     spike_raster_plot_8(np.flipud(moc_spikes[ear_index]), plt, duration, len(moc_spikes[ear_index]) + 1, 0.001,
+#                         markersize=1,subplots=(2,1,1))
+#     spike_raster_plot_8(np.flipud(sg_spikes[ear_index]), plt, duration, len(sg_spikes[ear_index]) + 1, 0.001,
+#                         markersize=1,subplots=(2,1,2))
+# print max_val
+# plt.show()
 
 if 'v' in recording_vars:
     sg_mem_v = [data.segments[0].filter(name='v') for data in results_data['sg_data']]
@@ -66,7 +98,6 @@ if 'v' in recording_vars:
     t_mem_v = t_combined['v']
     d_mem_v = d_combined['v']
 
-duration = len(stimulus[0])/Fs
 
 # left_t_spike_trains = [spike_train for spike_train in t_spikes[0] if len(spike_train)>0]
 # half_point = len(left_t_spike_trains)/2
@@ -93,6 +124,10 @@ t_ds = np.logspace(np.log10(1),np.log10(150),n_tds)
 n_dds = 10
 d_ds = np.logspace(np.log10(4),np.log10(16),n_dds)
 
+bfs = 165.4*(10**(2.1*np.linspace(0,1,int(len(sg_spikes[0])/10.)))-0.88)
+# bfs = np.flipud(165.4*(10**(2.1*np.linspace(0,1,3000))-0.88))
+target_an_frac = (np.abs(bfs - freq)).argmin() / float(len(bfs))
+
 # ic_matlab = loadmat('./ic_spikes.mat')['ICoutput']
 # ic_spikes_split = [ic_matlab[:10],ic_matlab[10:20],ic_matlab[20:]]
 # ic_spikes_orig=[val for tup in zip(*ic_spikes_split) for val in tup]
@@ -102,41 +137,39 @@ d_ds = np.logspace(np.log10(4),np.log10(16),n_dds)
 
 neuron_list = [[[] for __ in range(n_ears)] for _ in range(len(t_data_split[0]))]
 for ear_index in range(n_ears):
-    # neuron_title_list = ['t_stellate','d_stellate', 'bushy', 'octopus','moc','an']
-    # neuron_list = [t_spikes_combined,d_spikes_combined, b_spikes, o_spikes,moc_spikes,sg_spikes]
+    neuron_title_list = ['t_stellate','d_stellate', 'bushy', 'octopus','moc','an']
+    neuron_list = [t_spikes_combined,d_spikes_combined, b_spikes, o_spikes,moc_spikes,sg_spikes]
+    # neuron_title_list = ['moc','an']
+    # neuron_list = [moc_spikes,sg_spikes]
     # neuron_title_list = ['an','bushy', 'octopus','moc']
+    # neuron_list = [an_spikes]
     # neuron_list = [sg_spikes,b_spikes,o_spikes]#,moc_spikes]
     # neuron_title_list = ['t_stellate','d_stellate','moc','an']
     # neuron_list = [t_spikes_combined,d_spikes_combined,moc_spikes]#,an_spikes]
-    # neuron_title_list = ['octopus','d','an']
-    # neuron_list = [o_spikes,d_spikes_combined,an_spikes]
-    neuron_title_list = ["T stellate d = " + str(td) for td in t_ds]
-    for i, split in enumerate(t_data_split[ear_index]):
-        neuron_list[i][ear_index]=split.segments[0].spiketrains
-    # neuron_title_list = ["D stellate d = " + str(dd) for dd in d_ds]
-    # neuron_list = d_spikes_split[ear_index]
+    # neuron_title_list = ['t_stellate','octopus','d','an']
+    # neuron_list = [t_spikes_combined,o_spikes,d_spikes_combined,sg_spikes]
+    # neuron_title_list = ["T stellate d = {:.0f}".format(td) for td in t_ds]
+    # for i, split in enumerate(t_data_split[ear_index]):
+    #     neuron_list[i][ear_index]=split.segments[0].spiketrains
+
+    # neuron_title_list = ["D stellate d = {:.0f}".format(td) for td in d_ds]
+    # for i, split in enumerate(d_data_split[ear_index]):
+    #     neuron_list[i][ear_index]=split.segments[0].spiketrains
+    # # neuron_title_list = ["D stellate d = " + str(dd) for dd in d_ds]
+    # # neuron_list = d_spikes_split[ear_index]
     abrs =[]
 
     for i, neuron_times in enumerate(neuron_list):
         non_zero_neuron_times = np.flipud(neuron_times[ear_index])
         # non_zero_neuron_times = np.flipud(neuron_times)
-        mid_point = int(len(non_zero_neuron_times)*0.5)
+        mid_point = int(len(non_zero_neuron_times)*target_an_frac)
         # psth_spikes = non_zero_neuron_times[:]
-        # psth_spikes= non_zero_neuron_times[mid_point-10:mid_point+10]
-        chosen_neurons = non_zero_neuron_times[mid_point-10:mid_point+10]
-        #filter spike times so we only look at firings during a stimulus
-        psth_spikes=[]
-        for a in chosen_neurons:
-            for t in onset_times[ear_index]:
-                psth_spikes.append(a[(a>=t)*(a<t+100.)])#100 is tone duration -should probably calc this
-
-        # psth_spikes = [non_zero_neuron_times[mid_point]]
-        # psth_spikes = repeat_test_spikes_gen(non_zero_neuron_times,mid_point,[onset_times[ear_index]],test_duration_ms=75)[0]
+        psth_spikes= non_zero_neuron_times[mid_point-10:mid_point+10]
 
         if plot_spikes:
             plt.figure("spikes ear{} test {}".format(ear_index,test_index))
-            # spike_raster_plot_8(non_zero_neuron_times, plt, duration, len(non_zero_neuron_times) + 1, 0.001,
-            spike_raster_plot_8(psth_spikes, plt, duration, len(psth_spikes) + 1, 0.001,
+            spike_raster_plot_8(non_zero_neuron_times, plt, duration, len(non_zero_neuron_times) + 1, 0.001,
+            # spike_raster_plot_8(psth_spikes, plt, duration, len(psth_spikes) + 1, 0.001,
                                 title=neuron_title_list[i], markersize=1, subplots=(len(neuron_list), 1, i + 1))  # ,filepath=results_directory)
 
         if plot_psth:
@@ -201,8 +234,8 @@ for ear_index in range(n_ears):
         plt.xlabel("time (ms)")
 
     if 0:#plot_psth:
-        mid_point = int(len(an_spikes[ear_index]) / 2)
-        psth_spikes = sg_spikes[ear_index][:]#[mid_point - 100:mid_point + 100]
+        # mid_point = int(len(an_spikes[ear_index]) / 2)
+        # psth_spikes = sg_spikes[ear_index][:]#[mid_point - 100:mid_point + 100]
         psth_plot_8(plt, numpy.arange(len(psth_spikes)), psth_spikes, bin_width=0.25e-3,
                     duration=duration, ylim=1000, title='psth an')
 
@@ -242,11 +275,11 @@ for ear_index in range(n_ears):
         x = np.linspace(0,duration,len(stimulus[ear_index]))
         ax.plot(x,stimulus[ear_index])
 
-an_count = 0
-for ear in an_spikes:
-    for neuron in ear:
-        an_count+=len(neuron)
-print "an spike count = {}".format(an_count)
+# an_count = 0
+# for ear in an_spikes:
+#     for neuron in ear:
+#         an_count+=len(neuron)
+# print "an spike count = {}".format(an_count)
 
 plt.show()
 

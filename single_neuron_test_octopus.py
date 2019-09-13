@@ -26,7 +26,7 @@ octopus_params_cond_izh_orig = {
                 'a':0.02,
                 'b':0.1,#0.05,#
                 'c':-65,
-                'd':4,
+                'd':2,
                 'u':-15,
                'tau_syn_E': 0.2,#0.35,#2.5,#
                'e_rev_E': -55.,#-10.,#-10.,#-35.,#-55.1,#
@@ -37,11 +37,24 @@ octopus_params_cond_izh = {
                 'a':0.02,
                 'b':0.1,#0.25,#
                 'c':-65,
-                'd':4,
-                'u':-15,
+                'd':2,
+                'u':-5,
                'tau_syn_E': 0.2,#0.35,#2.5,#
-               'e_rev_E':-10.,# 30.,#-35.,#-55.1,#
+               'e_rev_E':30.,# -10.,#-35.,#-55.1,#
                'v': -70.,
+               # 'i_offset':5.
+               }
+
+octopus_params_cond_izh = {
+                'a':0.02,
+                'b':0.25,#
+                'c':-65,
+                'd':2,
+                'u':-5,
+               'tau_syn_E': 0.2,#0.35,#2.5,#
+               'e_rev_E':30.,# -10.,#-35.,#-55.1,#
+               'v': -70.,
+               'i_offset':0.5
                }
 
 octopus_lif_params = {
@@ -80,10 +93,11 @@ izk_A = {
 }
 
 results_directory = '/home/rjames/Dropbox (The University of Manchester)/EarProject/Pattern_recognition/spike_trains/IC_spikes'
-results_file = "/cn_tone_1000Hz_stereo_0s_1000an_fibres_0.1ms_timestep_100dB_0s_moc_True_lat_True.npz"
-# results_file = "/cn_tone_1000Hz_stereo_0s_1000an_fibres_0.1ms_timestep_0dB_0s_moc_True_lat_True.npz"
+results_file = "/cn_tone_100Hz_stereo_0s_1000an_fibres_0.1ms_timestep_50dB_0s_moc_True_lat_True.npz"
+# results_file = "/cn_100.0Hz_sam_tone1000Hz_0s_1000an_fibres_0.1ms_timestep_50dB_0s_moc_True_lat_True.npz"
 results_data = np.load(results_directory+results_file)
-an_spikes = results_data['an_spikes'][0]
+sg_spikes = [data.segments[0].spiketrains for data in results_data['sg_data']]
+an_spikes=sg_spikes[0]
 
 # cochlea_file = np.load(input_directory + '/spinnakear_1kHz_60s_{}dB.npz'.format(dB))
 # cochlea_file = np.load(input_directory + '/spinnakear_13.5_1_kHz_75s_{}dB_1000fibres.npz'.format(dB))
@@ -91,7 +105,7 @@ an_spikes = results_data['an_spikes'][0]
 # an_spikes = [[10.,15.,20.,100.,105.]]#,102,104]]
 # spike_times = [10.,15.,20.,100.,105.]
 # spike_times = [50.,105.]
-test_dur_ms = 200#
+test_dur_ms = 400#
 spike_times = [i for i in range(1,test_dur_ms,10)]
 # an_spikes = []#,102,104]]
 # n_inputs = 1000
@@ -165,6 +179,7 @@ input_pop = sim.Population(n_inputs,sim.SpikeSourceArray(spike_times=input_spike
 # cd_pop_2 = sim.Population(1,sim.extra_models.Izhikevich_cond,octopus_params_cond_izh,label="fixed_weight_scale_cond")
 cd_pop = sim.Population(n_o,sim.extra_models.Izhikevich_cond,octopus_params_cond_izh_orig,label="fixed_weight_scale_cond_1")
 cd_pop_2 = sim.Population(n_o,sim.extra_models.Izhikevich_cond,octopus_params_cond_izh,label="fixed_weight_scale_cond_2")
+# cd_pop_2 = sim.Population(n_o,sim.Izhikevich,octopus_params_cond_izh,label="fixed_weight_scale")
 # cd_pop_2 = sim.Population(1,sim.IF_cond_exp,octopus_lif_params,label="fixed_weight_scale_cond")
 # cd_pop_2 = sim.Population(1,sim.IF_cond_exp,{},label="fixed_weight_scale_cond")
 # cd_pop = sim.Population(target_pop_size,sim.IF_cond_exp,{'tau_m':20.,'cm':2.,'i_offset':20.},label="fixed_weight_scale_cond")
@@ -202,7 +217,7 @@ cd_pop_2.record("all")
 connection_weight = av_weight#w2s_target/number_of_inputs
 # an_on_list = normal_dist_connection_builder(number_of_inputs,target_pop_size,RandomDistribution,conn_num=n_connections,dist=1.,sigma=number_of_inputs/6.
 #                                             ,conn_weight=connection_weight)
-w2s_o = 1.5  #3.# 2.#7.
+w2s_o = 1.#1.5#3.# 2.#7.
 n_an_o_connections = RandomDistribution('uniform', [30., 120.])
 # n_an_o_connections = RandomDistribution('normal_clipped',[50.,5.,30.,120.])
 av_an_o = w2s_o / 50.
@@ -268,7 +283,7 @@ sim.end()
 # psth_plot_8(plt, numpy.arange(len(cd_data.segments[0].spiketrains)),cd_data.segments[0].spiketrains , bin_width=0.25 / 1000.,
 #             duration=duration/1000., title='psth output')
 # title = "Izhikevich neuron"
-for i in range(2):
+for i in range(1,2):
     title = "LIF neuron_{}".format(i)
     plt.figure(title)
     spike_raster_plot_8(cd_data[i].segments[0].spiketrains,plt,duration/1000.,n_o+1,0.001,title=title,subplots=(3,1,1))

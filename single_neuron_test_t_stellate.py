@@ -16,15 +16,23 @@ t_stellate_izk_class_2_params = {
                'a':0.4,#0.2,#0.02,#
                'b':0.26,
                'c':-65,
-               'd':8,
+               # 'd':8,
                'u':0,#-15,
-               'tau_syn_E':4.0,#0.94,#
+               'tau_syn_E':4.0,#2.,#0.94,#
                'tau_syn_I': 4.0,#2.5,#
                'v': -63.0,
 }
+t_stellate_izk_class_1_params={
+    'a':0.02,
+    'b':-0.1,
+    'c':-55,
+    'd':6,
+
+
+}
 
 t_stellate_lif_params ={'tau_syn_E': 0.94}
-dB = 60#20
+dB = 50#20
 n_fibres = 1000
 freq=1000
 
@@ -32,10 +40,13 @@ input_directory = '/home/rjames/Dropbox (The University of Manchester)/EarProjec
 
 # results_file = "/t_stellate_tone_{}Hz_0s_{}an_fibres_0.1ms_timestep_{}dB_0s_moc_False_lat_False.npz".format(freq,n_fibres,dB)
 # results_file = "/t_stellate_tone_1000Hz_stereo_0s_3000an_fibres_0.1ms_timestep_65dB_0s_moc_False_lat_False.npz"
-results_file = "/cn_tone_1000Hz_stereo_0s_1000an_fibres_0.1ms_timestep_60dB_0s_moc_True_lat_True.npz"
+# results_file = "/cn_tone_1000Hz_stereo_1s_1000an_fibres_0.1ms_timestep_80dB_1s_moc_True_lat_True.npz"
+results_file = "/cn_tone_1000Hz_stereo_0s_1000an_fibres_0.1ms_timestep_65dB_0s_moc_True_lat_True.npz"
 
 results_data = np.load(input_directory+results_file)
-an_spikes = results_data['an_spikes'][0]
+sg_spikes = [data.segments[0].spiketrains for data in results_data['sg_data']]
+an_spikes=sg_spikes[0]
+n_fibres = len(an_spikes)
 
 n_tds = 10
 # t_ds = np.linspace(1.,20.,n_tds)
@@ -74,7 +85,7 @@ input_pop = sim.Population(n_fibres,sim.SpikeSourceArray(spike_times=an_spikes),
 for td in range(n_tds):
     t_stellate_izk_class_2_params['d'] = t_ds[td]
     t_pops[td] = sim.Population(n_sub_t, sim.Izhikevich, t_stellate_izk_class_2_params,
-                                           label="t_stellate_fixed_weight_scale_cond")
+                                           label="t_stellate")#_fixed_weight_scale")
     # t_stellate_lif_params['tau_m'] = t_ds[td]
     # t_stellate_lif_params['v_thresh'] = t_ths[td]
     # t_pops[td] = sim.Population(n_sub_t, sim.IF_cond_exp, t_stellate_lif_params,
@@ -91,7 +102,7 @@ for td in range(n_tds):
 #                         (n_fibres,n_ears))
 # connection_dicts = connection_dicts_file['connection_dicts']
 
-w2s_t = 12.#0.4#1.6#0.4#0.1# 0.8#0.5#0.25#0.1#0.3#0.1#0.7
+w2s_t = 12.#50.#15.#0.4#1.6#0.4#0.1# 0.8#0.5#0.25#0.1#0.3#0.1#0.7
 n_an_t_connections = RandomDistribution('uniform', [4., 6.])
 av_an_t = w2s_t / 5.
 # an_t_weight = RandomDistribution('uniform',[0,av_an_t*2])
@@ -126,13 +137,14 @@ sim.end()
 for i,cd_data in enumerate(t_data):
     plt.figure('spikes')
     non_zero_neuron_times = cd_data.segments[0].spiketrains
-    spike_raster_plot_8(non_zero_neuron_times, plt, duration/1000., len(non_zero_neuron_times) + 1, 0.001,
+    # spike_raster_plot_8(non_zero_neuron_times, plt, duration/1000., len(non_zero_neuron_times) + 1, 0.001,
+    spike_raster_plot_8([non_zero_neuron_times[int(len(non_zero_neuron_times)/2)]], plt, duration/1000.,  2, 0.001,
                          markersize=1, subplots=(len(t_data), 1, i + 1),title=str(t_ds[i])
                         )
-    plt.figure("psth")
+    # plt.figure("psth")
     psth_spikes = non_zero_neuron_times[:]
-    psth_plot_8(plt, numpy.arange(len(psth_spikes)), psth_spikes, bin_width=1e-3,
-                duration=duration/1000.,title=str(t_ds[i]),subplots=(len(t_data), 1, i + 1),ylim=500)
+    # psth_plot_8(plt, numpy.arange(len(psth_spikes)), psth_spikes, bin_width=1e-3,
+    #             duration=duration/1000.,title=str(t_ds[i]),subplots=(len(t_data), 1, i + 1),ylim=500)
 
     plt.figure("v_mem")
     mem_v = cd_data.segments[0].filter(name='v')
@@ -154,24 +166,24 @@ for i,cd_data in enumerate(t_data):
     plt.subplot(len(t_data), 1, i + 1)
     plt.hist(hist_isi,bins=100)
     plt.xlim((0,20))
-    plt.figure("CV")
-    cvs = [cv(interval) for interval in t_isi if len(interval) > 0]
-    plt.subplot(len(t_data), 1, i + 1)
-    plt.hist(cvs)  # ,bins=100)
-    plt.xlim((0, 2))
+    # plt.figure("CV")
+    # cvs = [cv(interval) for interval in t_isi if len(interval) > 0]
+    # plt.subplot(len(t_data), 1, i + 1)
+    # plt.hist(cvs)  # ,bins=100)
+    # plt.xlim((0, 2))
 
-spike_raster_plot_8(an_spikes, plt, duration/1000., len(an_spikes) + 1, 0.001,
-                     markersize=1, title= "an spikes" )
-
-mid_point = int(len(an_spikes)/2)
-psth_spikes = an_spikes[mid_point-100:mid_point+100]
-psth_plot_8(plt, numpy.arange(len(psth_spikes)), psth_spikes, bin_width=0.25e-3,
-            duration=duration/1000.,ylim=None,title='psth an')
-
-an_count = 0
-for neuron in an_spikes:
-    an_count+=len(neuron)
-print "an spike count = {}".format(an_count)
+# spike_raster_plot_8(an_spikes, plt, duration/1000., len(an_spikes) + 1, 0.001,
+#                      markersize=1, title= "an spikes" )
+#
+# mid_point = int(len(an_spikes)/2)
+# psth_spikes = an_spikes[mid_point-100:mid_point+100]
+# psth_plot_8(plt, numpy.arange(len(psth_spikes)), psth_spikes, bin_width=0.25e-3,
+#             duration=duration/1000.,ylim=None,title='psth an')
+#
+# an_count = 0
+# for neuron in an_spikes:
+#     an_count+=len(neuron)
+# print "an spike count = {}".format(an_count)
 # mem_v = cd_data.segments[0].filter(name='v')
 # # cell_voltage_plot_8(mem_v, plt, duration, [],id=599,scale_factor=0.001,title='cd pop')
 

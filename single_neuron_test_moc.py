@@ -238,47 +238,65 @@ moc_rs_params = {
     'd': 8,
     'u': -15,
     'v': -70,
-    'tau_syn_E': 0.5,
+    # 'tau_syn_E': 0.5,
 }
 
 moc_lif_params = {
     'tau_syn_E': 2.,
-    # 'tau_m':10.
+    # 'tau_m':1.
 }
 
-
-dB = 50#20
+moc_lts_params = {
+    'a': 0.02,
+    'b': 0.25,
+    'c': -65,
+    'd':2,
+    'u': -10,
+    'v': -65,
+}
+moc_lts_params = {
+    'a': 0.02,
+    'b': 0.2,
+    'c': -65,
+    'd': 1.,
+    'u': -10,
+    'v': -65,
+}
+moc_lts_params = {
+    'a': 0.02,
+    'b': 0.2,
+    'c': -65,
+    'd': 0.5,
+    'u': -10,
+    'v': -65,
+    'tau_syn_E': 2.
+}
 input_directory = '/home/rjames/Dropbox (The University of Manchester)/EarProject/Pattern_recognition/spike_trains/IC_spikes'
-# cochlea_file = np.load(input_directory + '/spinnakear_1kHz_60s_{}dB.npz'.format(dB))
-# cochlea_file = np.load(input_directory + '/spinnakear_13.5_1_kHz_75s_{}dB_1000fibres.npz'.format(dB))
-# an_spikes = [[i*7.+ 3.*(np.random.rand()-0.5) for i in range(50)]for _ in range(100)]#[[10.,11.,12.,13.]]#cochlea_file['scaled_times']
-# an_spikes = [[10.,15.,20.,100.,105.]]#,102,104]]
-# spike_times = [10.,15.,20.,100.,105.]
-# spike_times = [50.,105.]
-test_dur_ms = 150#
-spike_times = [i for i in range(1,test_dur_ms,100)]
-an_spikes = []#,102,104]]
-
-n_inputs = 50
-spike_jitter = 5
-for i in range(n_inputs):
-    an_spikes.append([i+spike_jitter*(np.random.rand()-0.5) for i in spike_times])
 
 # results_file = "/cn_tone_1000Hz_stereo_0s_1000an_fibres_0.1ms_timestep_100dB_0s_moc_True_lat_True.npz"
-results_file = "/cn_timit_0s_1000an_fibres_0.1ms_timestep_100dB_2s_moc_True_lat_True.npz"
+# results_file = "/cn_timit_0s_1000an_fibres_0.1ms_timestep_50dB_2s_moc_True_lat_True.npz"
+results_file = "/cn_tone_1000Hz_stereo_1s_1000an_fibres_0.1ms_timestep_50dB_1s_moc_True_lat_True.npz"
 # results_file = "/cn_tone_1000Hz_stereo_0s_3000an_fibres_0.1ms_timestep_65dB_0s_moc_True_lat_True.npz"
 # results_file = "/cn_tone_1000Hz_stereo_0s_1000an_fibres_0.1ms_timestep_65dB_0s_moc_True_lat_True.npz"
 # results_file = "/cn_tone_1000Hz_stereo_0s_1000an_fibres_0.1ms_timestep_100dB_0s_moc_True_lat_False.npz"
 # results_file = "/cn_tone_1000Hz_stereo_0s_1000an_fibres_0.1ms_timestep_65dB_0s_moc_True_lat_True_{}.npz".format(test_index)
 
 results_data = np.load(input_directory+results_file)
-t_spikes_split = results_data['t_spikes'][0]
-t_spikes_combined = [val for tup in zip(*t_spikes_split) for val in tup]
+t_data_split = results_data['t_data']
+
+t_spikes_split = [split.segments[0].spiketrains for split in t_data_split[0]]
+t_combined = split_population_data_combine(t_data_split,['spikes'])
+t_spikes_combined = t_combined['spikes'][0]
+stimulus = results_data['stimulus']
+Fs = results_data['Fs']
+
+duration = 60.#1000*len(stimulus[0])/Fs
+
 
 n_tds = len(t_spikes_split)
 n_ears = 2
 n_fibres = 1000
-n_total = int(6.66 * n_fibres)
+n_total = int(2.4 * n_fibres)
 
 #ratios taken from campagnola & manis 2014 mouse
 n_t = int(n_total * 2./3 * 24./89)
@@ -289,10 +307,9 @@ n_moc =360
 n_sub_t=int(n_t/n_tds)
 pop_size = max([n_fibres,n_d,n_t,n_b,n_o,n_moc])
 
-
-w2s_moc = 0.1#0.05  # 0.75
+w2s_moc = 30.#0.2#0.75#0.05  # 0.75
 # n_t_moc_connections = RandomDistribution('uniform', [5, 10])
-av_t_moc_connections = 50  # int(np.ceil(float(n_t)/n_moc))
+av_t_moc_connections = 10  # int(np.ceil(float(n_t)/n_moc))
 n_t_moc_connections = RandomDistribution('normal_clipped',
                                          [av_t_moc_connections, 0.1 * av_t_moc_connections, 0,
                                           av_t_moc_connections * 2.])
@@ -308,32 +325,7 @@ for (pre, post, w, d) in t_mocc_master:
     i = np.remainder(pre, n_tds)
     t_mocc_list[i].append((int((float(pre) / n_t) * n_sub_t + 0.5), post, w, d))
 
-# an_spikes = []
-# for _ in range(60):
-#     an_spikes.append([10. + (5. * (np.random.rand()-0.5))])
-# an_spikes = cochlea_file['scaled_times']
 target_pop_size =360
-w2s_target = 2.#0.3#0.5#0.1#0.2#3.#0.7#1.#15.#0.005#0.0015#0.0006#1.5#4.5#0.12#2.5#5.
-# n_connection = 120.#50#100
-n_connections = RandomDistribution('uniform',[30.,120.])
-# connection_weight = w2s_target/n_connections#w2s_target#initial_weight*2.#/2.
-av_weight =w2s_target/n_inputs#/30.#w2s_target/90.# w2s_target/n_connections#
-
-#plt.hist(connection_weight.next(1000),bins=100)
-#plt.show()
-
-number_of_inputs = len(an_spikes)#
-# inh_weight = initial_weight#(n_connections-number_of_inputs)*(initial_weight)#*2.
-
-input_spikes = an_spikes
-# input_spikes =[]
-inh_spikes = []
-# isi = 3.
-# n_repeats = 20
-
-# for neuron in range(number_of_inputs):
-#      input_spikes.append([i*isi for i in range(n_repeats) if i<50 or i>100])
-#     inh_spikes.append([(i*isi)-1 for i in range(n_repeats) if i<5 or i>10])
 
 #================================================================================================
 # SpiNNaker setup
@@ -356,50 +348,19 @@ for i,in_spikes in enumerate(t_spikes_split):
 # cd_pop = sim.Population(target_pop_size,sim.IF_curr_exp,one_to_one_cond_params,label="fixed_weight_scale")
 # cd_pop = sim.Population(target_pop_size,sim.extra_models.Izhikevich_cond,moc_class_2_params,label="fixed_weight_scale_cond")
 # cd_pop = sim.Population(target_pop_size,sim.extra_models.Izhikevich_cond,octopus_params_cond_izh,label="fixed_weight_scale_cond")
-cd_pop = sim.Population(target_pop_size,sim.IF_cond_exp,moc_lif_params,label="fixed_weight_scale_cond")
+# cd_pop = sim.Population(target_pop_size,sim.IF_cond_exp,moc_lif_params,label="fixed_weight_scale_cond")
+cd_pop = sim.Population(target_pop_size,sim.Izhikevich,moc_lts_params,label="moc")
 # cd_pop = sim.Population(1,sim.IF_curr_exp,on_params,label="fixed_weight_scale")
 # cd_pop = sim.Population(1,sim.IF_curr_exp,inh_params,label="fixed_weight_scale")
 # inh_pop =
 # input_pop.record("spikes")
-
 cd_pop.record("all")
 #================================================================================================
 # Projections
 #================================================================================================
-# diagonal_width = 2.#26.#
-# diagonal_sparseness = 1.
-# in2out_sparse = .67 * .67 / diagonal_sparseness
-# dist = max(int(number_of_inputs / number_of_inputs), 1)
-# sigma = dist * diagonal_width
-# conn_num = int(sigma / in2out_sparse)
-# av_weight = w2s_target/conn_num
-# # an2ch_weight = RandomDistribution('normal',[av_weight,0.1])
-# # an2ch_weight = RandomDistribution('normal',[av_weight,0.5])
-# # an2ch_weight = RandomDistribution('uniform',[0,av_weight+(av_weight*1.5)])
-# an2ch_weight = RandomDistribution('uniform',[0.9*(w2s_target/conn_num),1.1*(w2s_target/conn_num)])
-#
-# an2ch_list = normal_dist_connection_builder(number_of_inputs,number_of_inputs,RandomDistribution,
-#                                             conn_num,dist,sigma)
-
-# connection_weight = RandomDistribution('normal_clipped',[av_weight,av_weight/10.,0,2*av_weight])
-# connection_weight = RandomDistribution('normal_clipped',[av_weight,av_weight/100.,0,2*av_weight])
-# connection_weight = RandomDistribution('uniform',[av_weight/5.,av_weight*2])
-connection_weight = av_weight#w2s_target/number_of_inputs
-# an_on_list = normal_dist_connection_builder(number_of_inputs,target_pop_size,RandomDistribution,conn_num=n_connections,dist=1.,sigma=number_of_inputs/6.
-#                                             ,conn_weight=connection_weight)
-
-# input_projection = sim.Projection(input_pop,cd_pop,sim.FromListConnector(an_on_list),synapse_type=sim.StaticSynapse())
-# input_projection = sim.Projection(input_pop,cd_pop,sim.FromListConnector(an2ch_list),synapse_type=sim.StaticSynapse(weight=an2ch_weight))
-# input_projection = sim.Projection(input_pop,cd_pop,sim.AllToAllConnector(),synapse_type=sim.StaticSynapse(weight=connection_weight))
-# input_projection = sim.Projection(input_pop,cd_pop,sim.FixedProbabilityConnector(p_connect=n_connections/number_of_inputs),synapse_type=sim.StaticSynapse(weight=connection_weight))
-#inh_projection = sim.Projection(inh_pop,cd_pop,sim.AllToAllConnector(),synapse_type=sim.StaticSynapse(weight=inh_weight),receptor_type='inhibitory')
-# inh_projection = sim.Projection(inh_pop,cd_pop,sim.AllToAllConnector(),synapse_type=stdp_model_cd,receptor_type='inhibitory')
-
 for i, t_mocc_l in enumerate(t_mocc_list):
     if len(t_mocc_l) > 0:
         sim.Projection(input_pops[i], cd_pop,sim.FromListConnector(t_mocc_l), synapse_type=sim.StaticSynapse())
-
-duration = test_dur_ms#max(input_spikes[0])
 
 sim.run(duration)
 
@@ -419,10 +380,10 @@ Figure(
     # Panel(cd_data.segments[0].filter(name='gsyn_inh')[0],
     #       ylabel="gsyn inhibitory (mV)",legend=False,
     #        yticks=True,xticks=True, xlim=(0, duration)),
-    Panel(cd_data.segments[0].spiketrains,marker='.',
-          yticks=True,markersize=3,
-                 markerfacecolor='black', markeredgecolor='none',
-                 markeredgewidth=0,xticks=True, xlim=(0, duration)),
+    # Panel(cd_data.segments[0].spiketrains,marker='.',
+    #       yticks=True,markersize=1,
+    #              markerfacecolor='black', markeredgecolor='none',
+    #              markeredgewidth=0,xticks=True, xlim=(0, duration)),
     # Panel(input_data.segments[0].spiketrains, marker='.',
     #       yticks=True, markersize=3,
     #       markerfacecolor='black', markeredgecolor='none',
@@ -433,7 +394,9 @@ psth_plot_8(plt, numpy.arange(len(t_spikes_combined)),t_spikes_combined , bin_wi
             duration=duration/1000., title='psth input')
 psth_plot_8(plt, numpy.arange(len(cd_data.segments[0].spiketrains)),cd_data.segments[0].spiketrains , bin_width=0.25 / 1000.,
             duration=duration/1000., title='psth output')
-spike_raster_plot_8(t_spikes_combined,plt,duration/1000.,n_t+1,0.001,title="input activity")
+plt.figure("spikes")
+spike_raster_plot_8(t_spikes_combined,plt,duration/1000.,n_t+1,0.001,title="input activity",subplots=(2,1,1),markersize=1)
+spike_raster_plot_8(cd_data.segments[0].spiketrains,plt,duration/1000.,n_moc+1,0.001,title="moc activity",subplots=(2,1,2),markersize=1)
 
 # mem_v = cd_data.segments[0].filter(name='v')
 # # cell_voltage_plot_8(mem_v, plt, duration, [],id=599,scale_factor=0.001,title='cd pop')

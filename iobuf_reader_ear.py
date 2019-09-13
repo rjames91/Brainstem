@@ -168,22 +168,29 @@ optimised = [x+'/run_1/provenance_data/' for x in sorted(glob.glob('/home/rjames
 test_default = [x+'/run_1/provenance_data/' for x in sorted(glob.glob('/home/rjames/SpiNNaker_devel/SpiNNaker_scale_tests/profile_results/fixed_prob/multiple_rbn/test_default/*'))]
 test_optimised = [x+'/run_1/provenance_data/' for x in sorted(glob.glob('/home/rjames/SpiNNaker_devel/SpiNNaker_scale_tests/profile_results/fixed_prob/multiple_rbn/test_optimised/*'))]
 
-cn = [x+'/run_1/provenance_data/' for x in sorted(glob.glob('/home/rjames/SpiNNaker_devel/SpiNNaker_scale_tests/cn_tests/*'))]
+cn = [x+'/run_1/provenance_data/' for x in sorted(glob.glob('/home/rjames/SpiNNaker_devel/SpiNNaker_scale_tests/cn_scale/*'))]
+
+space_time = [x+'/run_1/provenance_data/' for x in sorted(glob.glob('/home/rjames/SpiNNaker_devel/SpiNNaker_scale_tests/space_time_op_tests/*'))]
+
 
 # input_directories = [test]
-input_sizes = ['1k','2k','4k','6k','8k','16k','32k']
+# input_sizes = ['1k','2k','4k','6k','8k','16k','32k']
+input_sizes = ['300','3k','10k','6k','8k','16k','32k']
 # input_directories = [ear_default,test,test_auto]
 input_directories = [cn]
 # input_sizes = ['1k','2k','4k','8k']
 input_dict = {
+    '300':300,
     '1k':1000,
+    '3k':3000,
     '2k':2000,
     '4k':4000,
     '6k':6000,
-    '8k':8000
+    '8k':8000,
+    '10k':10000
 }
-pie = True
-profile_plot = False
+pie = False
+profile_plot = True
 lin_reg = False
 # input_directories = [default,optimised]
 # input_sizes = ['n=1','n=2','n=4','n=8','n=16','n=32']#,'30k']
@@ -264,7 +271,7 @@ if pie:
     plt.legend(legend_line,["total unconnected spike count","total connected spike count"],bbox_to_anchor=(0.25, 0.1))
 
 if profile_plot:
-    pop = "moc"
+    pop = ""
     pop_dict = {
         "d_stellate":'d',
         "t_stellate":'t',

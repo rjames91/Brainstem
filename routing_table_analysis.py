@@ -4,7 +4,8 @@ from glob import glob
 import os
 
 n_entries_threshold = 1024
-directory = './reports_local/reports/2019-04-08-14-21-39-777930/run_1/routing_tables_generated'
+# directory = './reports_local/reports/2019-04-08-14-21-39-777930/run_1/routing_tables_generated'
+directory = '/home/rjames/SpiNNaker_devel/SpiNNaker_scale_tests/profile_results/spinnak_ear/70k_cn_0819/auto_max_atoms/2019-08-20-13-01-54-706961/run_1/routing_tables_generated'
 fnames = glob(directory+'/routing_table_*.rpt')
 output_file = open(directory+"/problem_routers.txt",'a+')
 
